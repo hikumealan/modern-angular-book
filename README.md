@@ -113,6 +113,28 @@ interface Holding {
 | 18 | Micro Frontends: Scaling Across Multiple Teams | [ch18-micro-frontends.md](ch18-micro-frontends.md) |
 | 19 | Analyzing Your Architecture with Forensic Techniques | [ch19-forensic-architecture.md](ch19-forensic-architecture.md) |
 
+### Part IV -- Quality & Production Readiness
+
+| # | Chapter | File |
+|---|---------|------|
+| 20 | Coding Style Guide & Project Structure | [ch20-style-guide-structure.md](ch20-style-guide-structure.md) |
+| 21 | Security & OWASP Best Practices | [ch21-security-owasp.md](ch21-security-owasp.md) |
+| 22 | Accessibility, Angular Aria & a11y Best Practices | [ch22-accessibility-aria.md](ch22-accessibility-aria.md) |
+| 23 | Error Handling | [ch23-error-handling.md](ch23-error-handling.md) |
+| 24 | Performance Optimization | [ch24-performance.md](ch24-performance.md) |
+| 25 | E2E Testing with Playwright | [ch25-e2e-playwright.md](ch25-e2e-playwright.md) |
+| 26 | PWA & Service Workers | [ch26-pwa-service-workers.md](ch26-pwa-service-workers.md) |
+
+### Part V -- Tooling & Integration
+
+| # | Chapter | File |
+|---|---------|------|
+| 27 | Angular Material & Design System | [ch27-material-design-system.md](ch27-material-design-system.md) |
+| 28 | Storybook for Component Libraries | [ch28-storybook.md](ch28-storybook.md) |
+| 29 | AI Tooling, MCP & Agent Skills | [ch29-ai-tooling-mcp-skills.md](ch29-ai-tooling-mcp-skills.md) |
+| 30 | Advanced Monorepo & Nx Features | [ch30-advanced-nx.md](ch30-advanced-nx.md) |
+| 31 | Advanced TypeScript & OpenAPI Service Generation | [ch31-advanced-typescript-openapi.md](ch31-advanced-typescript-openapi.md) |
+
 ---
 
 ## Companion Codebase
