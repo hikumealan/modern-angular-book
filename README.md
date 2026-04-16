@@ -1,7 +1,8 @@
 # Modern Angular -- Learning Companion
 
-Original educational content structured around the table of contents of
-*Modern Angular: Architecture, Concepts, Implementation* by **Manfred Steyer** (March 2026).
+Original educational content structured around the table of contents from
+*Modern Angular: Architecture, Concepts, Implementation* by **Manfred Steyer** (March 2026) and
+*ng-book 2* by **Fullstack.io** (https://www.newline.co/ng-book/2/).
 
 > **Disclaimer**: This is independently written learning material -- it is **not** a reproduction
 > of the book. The chapter structure follows the published table of contents, but the prose,
@@ -134,6 +135,23 @@ interface Holding {
 | 29 | AI Tooling, MCP & Agent Skills | [ch29-ai-tooling-mcp-skills.md](ch29-ai-tooling-mcp-skills.md) |
 | 30 | Advanced Monorepo & Nx Features | [ch30-advanced-nx.md](ch30-advanced-nx.md) |
 | 31 | Advanced TypeScript & OpenAPI Service Generation | [ch31-advanced-typescript-openapi.md](ch31-advanced-typescript-openapi.md) |
+
+### Part VI -- Appendices
+
+| # | Appendix | File |
+|---|----------|------|
+| A | TypeScript Essentials for Angular | [appendix-a-typescript-primer.md](appendix-a-typescript-primer.md) |
+
+---
+
+## What This Book Does Not Cover
+
+A few topics are intentionally out of scope. Pointers are provided so you know where to go when you need them:
+
+- **AngularJS 1.x to Angular migration (`ngUpgrade`).** AngularJS reached end-of-life in 2022. If you are maintaining an AngularJS app, the official [AngularJS upgrade guide](https://angular.dev/tools/upgrade/upgrade-vs-downgrade) is the authoritative resource.
+- **Mobile frameworks (NativeScript, Ionic).** The book focuses on web, SSR, and PWA deployment. For native mobile, see the [Ionic](https://ionicframework.com/docs/angular/overview) or [NativeScript](https://docs.nativescript.org/) documentation.
+- **Deep-dive coverage of classic Reactive Forms.** Signal Forms is the v21 default and receives full treatment in [Chapter 6](ch06-signal-forms.md). A compact "Reactive Forms Compatibility" section at the end of Chapter 6 covers interop for legacy-code maintainers. For the complete classic API, see the [Angular Forms guide](https://angular.dev/guide/forms).
+- **Plain Redux as a library.** The Redux pattern is covered through [NgRx Signal Store](ch09-ngrx-signal-store.md), which is the idiomatic choice in the signal era.
 
 ---
 

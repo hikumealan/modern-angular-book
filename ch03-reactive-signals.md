@@ -445,6 +445,208 @@ For deeper patterns around state management -- including SignalStore, state norm
 
 ---
 
+## Working with RxJS
+
+Signals are Angular v21's primary reactivity primitive, but RxJS is not going anywhere. Every `HttpClient` call returns an `Observable`. The `Router` exposes events as observables. `ActivatedRoute` streams parameters through `params$` and `queryParamMap$`. Third-party libraries -- from form-control `valueChanges` to WebSocket clients to NgRx's `rxMethod` and `rxMutation` -- all speak Observables. A fluent Angular developer is comfortable in both worlds and knows exactly where the boundary lives.
+
+This section is a focused tour of the RxJS subset that matters in a signal-first codebase: the few operators that come up constantly, two patterns (the *operation stream* and *cancellation via switchMap*) that solve recurring real-world problems, and the interop surface (`toSignal`, `toObservable`, `rxResource`) that lets Observables and signals coexist peacefully.
+
+### Observable Basics
+
+An Observable is a push-based stream of values over time. Subscribing starts it, the subscription emits a series of values plus optionally a terminal `complete` or `error`, and unsubscribing stops it. The three Subject variants you will encounter most often in Angular code:
+
+```typescript
+import { Subject, BehaviorSubject, ReplaySubject } from 'rxjs';
+
+// Plain Subject: subscribers only see values emitted *after* they subscribe.
+const events = new Subject<string>();
+
+// BehaviorSubject: seeded with an initial value; new subscribers immediately
+// receive the current value, then every subsequent emission.
+const selectedAccountId = new BehaviorSubject<number | null>(null);
+
+// ReplaySubject: buffers the last N values and replays them to new subscribers.
+const recentErrors = new ReplaySubject<Error>(10);
+```
+
+`BehaviorSubject` is the RxJS equivalent of a writable signal with an initial value -- it is what services used to expose before signals existed. If you inherit a codebase full of `BehaviorSubject` services, you can usually convert them one boundary at a time using `toSignal` without rewriting the internals.
+
+Cold observables produce fresh work per subscription (like a fresh HTTP request). Hot observables share a single underlying source across subscribers (like a WebSocket feed). `HttpClient` is cold by default; two subscribers produce two HTTP requests. `shareReplay` (below) is how you make a cold observable hot when you want to share results.
+
+### Core Operators
+
+These are the operators that carry the weight in typical Angular applications:
+
+- **`map(fn)`** -- transform each emission. Pure, synchronous. `map((user) => user.id)`.
+- **`filter(pred)`** -- drop emissions that do not satisfy a predicate. `filter((value) => value !== null)`.
+- **`tap(fn)`** -- side effect without modifying the stream. Good for logging.
+- **`debounceTime(ms)`** -- emit only after `ms` milliseconds of silence. Typeahead inputs, resize observers.
+- **`distinctUntilChanged()`** -- suppress consecutive duplicates. Pair with `debounceTime` for search boxes.
+- **`switchMap(fn)`** -- for each source emission, cancel the previous inner observable and switch to a new one. The go-to operator for cancellable async work like "search on keystroke."
+- **`mergeMap(fn)`** -- like `switchMap` but does not cancel -- runs all inner observables in parallel. Use when every outer emission *must* produce a result (uploads, fire-and-forget logging).
+- **`concatMap(fn)`** -- like `mergeMap` but serializes -- one inner observable at a time. Use when order matters.
+- **`catchError(fn)`** -- intercept an error and return a fallback observable. Without `catchError`, an error terminates the stream permanently.
+- **`retry({ count, delay })`** -- resubscribe on error. See [Chapter 23](ch23-error-handling.md) for the full retry-with-backoff pattern.
+- **`shareReplay({ bufferSize, refCount })`** -- multicast a cold observable and replay the last `bufferSize` values to late subscribers. The standard way to cache an HTTP request shared by multiple components.
+- **`takeUntilDestroyed()`** -- Angular-specific. Completes the observable when the current injection context is destroyed. It is the modern replacement for the `Subject<void>`-plus-`takeUntil` cleanup pattern.
+
+A typeahead that combines most of them:
+
+```typescript
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs';
+
+@Component({ /* ... */ })
+export class AccountSearchComponent {
+  private http = inject(HttpClient);
+
+  query = signal('');
+
+  private results$ = toObservable(this.query).pipe(
+    debounceTime(250),
+    distinctUntilChanged(),
+    filter((term) => term.length >= 2),
+    switchMap((term) =>
+      this.http.get<Account[]>(`/api/accounts?q=${encodeURIComponent(term)}`),
+    ),
+  );
+
+  results = toSignal(this.results$, { initialValue: [] });
+}
+```
+
+Reading it top to bottom: the signal is converted to an observable at the boundary, the stream is debounced and deduplicated, short strings are filtered out, `switchMap` cancels any in-flight request when a new term arrives, and the final observable is converted back to a signal for template binding. No manual `subscribe`, no manual teardown.
+
+### The Operation Stream Pattern
+
+A durable RxJS pattern that predates signals but still earns its keep: express mutations as a stream of *operations* on current state, instead of imperative calls that poke at state directly. The shape is `Subject<Operation>` + `scan` reducer + `shareReplay`:
+
+```typescript
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Subject, merge, scan, shareReplay, switchMap } from 'rxjs';
+
+type TxOp =
+  | { kind: 'loaded'; txns: Transaction[] }
+  | { kind: 'added'; txn: Transaction }
+  | { kind: 'removed'; id: number };
+
+@Injectable({ providedIn: 'root' })
+export class TransactionStore {
+  private http = inject(HttpClient);
+
+  private add$ = new Subject<Transaction>();
+  private remove$ = new Subject<number>();
+
+  private load$ = this.http
+    .get<Transaction[]>('/api/transactions')
+    .pipe(/* returns a single emission */);
+
+  transactions$ = merge(
+    this.load$.pipe(switchMap(async (txns) => ({ kind: 'loaded' as const, txns }))),
+    this.add$.pipe(switchMap(async (txn) => ({ kind: 'added' as const, txn }))),
+    this.remove$.pipe(switchMap(async (id) => ({ kind: 'removed' as const, id }))),
+  ).pipe(
+    scan((state: Transaction[], op: TxOp) => {
+      switch (op.kind) {
+        case 'loaded':  return op.txns;
+        case 'added':   return [...state, op.txn];
+        case 'removed': return state.filter((t) => t.id !== op.id);
+      }
+    }, []),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+
+  add(txn: Transaction)    { this.add$.next(txn); }
+  remove(id: number)       { this.remove$.next(id); }
+}
+```
+
+`scan` plays the role of a reducer; every operation produces the next state. `shareReplay({ bufferSize: 1, refCount: true })` caches the latest state and replays it to every new subscriber, behaving like a BehaviorSubject. Consumers get a read-only view:
+
+```typescript
+const transactions = toSignal(this.store.transactions$, { initialValue: [] });
+```
+
+If the pattern looks familiar, it should -- it is Redux/Flux expressed in RxJS idioms. Most new code in this book uses NgRx Signal Store ([Chapter 9](ch09-ngrx-signal-store.md)) instead, but the operation-stream pattern is worth recognizing because it appears throughout existing Angular codebases.
+
+### Bridging Signals and Observables
+
+Angular ships two utilities in `@angular/core/rxjs-interop` that connect the two worlds.
+
+#### `toSignal(observable$)`
+
+```typescript
+import { toSignal } from '@angular/core/rxjs-interop';
+
+transactions = toSignal(this.http.get<Transaction[]>('/api/transactions'), {
+  initialValue: [],
+});
+```
+
+`toSignal` subscribes when called, feeds each emission into a signal, and automatically unsubscribes when the current injection context is destroyed. Key points:
+
+- **Initial value.** If the observable may not emit synchronously, pass `initialValue`. Without it, the returned signal is typed as `T | undefined` and reads `undefined` until the first emission.
+- **Injection context.** The call must happen inside an injection context (component constructor, field initializer, `inject()` factory). If you need to call it elsewhere, pass `{ injector }`.
+- **Error handling.** By default, an error from the observable throws on the next read. Pass `{ rejectErrors: false }` to propagate the error silently and require callers to handle it, or use `catchError` inside the pipe to keep the signal on a happy path.
+- **Replay.** `toSignal` does not replay values to new subscribers -- it simply keeps the most recent one. That is already the signal semantics.
+
+#### `toObservable(signal)`
+
+The reverse direction:
+
+```typescript
+import { toObservable } from '@angular/core/rxjs-interop';
+
+const query$ = toObservable(this.query);
+```
+
+`toObservable` subscribes to an effect internally and emits once per tick when the signal changes. Two subtleties:
+
+- Emissions happen *after* change detection, not synchronously with `set()`. If you set a signal three times in a row, the observable receives the last value, not three.
+- The conversion runs in an effect, so it must be called inside an injection context -- same rule as `toSignal`.
+
+#### `rxResource()` for Streaming Data
+
+When you need the state machine that `httpResource` provides -- loading flag, error state, value signal -- but the source is any RxJS observable, reach for `rxResource`:
+
+```typescript
+import { rxResource } from '@angular/core/rxjs-interop';
+
+transactions = rxResource({
+  params: () => ({ accountId: this.accountId() }),
+  stream: ({ params }) =>
+    this.http.get<Transaction[]>(`/api/accounts/${params.accountId}/transactions`),
+});
+```
+
+The `stream` function is called whenever `params()` changes. Its return value is an Observable instead of a Promise, so you can compose the full RxJS operator chain (`switchMap`, `retry`, `debounceTime`) before handing the result off as a Resource. This is the go-to wrapper when you need observable pipelines -- retries, progress events, streaming -- with a resource-shaped consumer API.
+
+### When to Reach for RxJS vs Signals
+
+Rules of thumb, roughly in order of preference:
+
+- **Component state and derived view data: signals.** `signal()`, `computed()`, `linkedSignal()`. No RxJS.
+- **Single-shot HTTP requests with no cancellation requirements: `httpResource` or signal-aware services.** No RxJS.
+- **HTTP requests where cancellation, retries, or progress matter: `rxResource` or `HttpClient` + the operators above.** Observables inside a service, signals at the template boundary.
+- **Streams of events from the browser or server (keystrokes, WebSocket messages, SSE, Router events): RxJS.** Signals are snapshots; they are a poor fit for streams where every emission matters.
+- **Complex dependency-aware pipelines (multi-source debounce, race conditions, backpressure): RxJS.** The operator vocabulary is richer than the signal graph for this class of problem.
+- **Timer-based flows (`interval`, `timer`, `delay`): RxJS.** You can wrap them with `toSignal` for template binding, but the composition lives in Observable land.
+
+The boundary is usually one of:
+
+- A service exposes both an internal `BehaviorSubject` (or an operator chain) *and* a signal derived from `toSignal`. Components consume the signal.
+- A component takes inputs as signals, converts a few to Observables for a debounced pipeline, then converts back with `toSignal` for rendering.
+
+### Cross-References
+
+- [Chapter 7](ch07-testing-vitest.md), "Testing Timers and Debouncing" -- Vitest fake timers for observables that use `debounceTime` or `delay`.
+- [Chapter 9](ch09-ngrx-signal-store.md) -- `rxMethod` and `rxMutation` in NgRx Signal Store, built on `toObservable` + operator chains.
+- [Chapter 23](ch23-error-handling.md) -- `catchError` and retry strategies for HTTP interceptors.
+- [Chapter 2](ch02-signal-components.md), "Advanced HTTP" -- File uploads, cancellation, and streaming with `HttpClient` and `fetch`.
+
+---
+
 ## Summary
 
 Signals give Angular a reactive primitive that is synchronous, glitch-free, and deeply integrated with the rendering engine. In this chapter we covered:

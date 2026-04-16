@@ -4,6 +4,8 @@ Every framework has a first impression -- the handful of minutes between install
 
 This chapter covers the practical setup: installing the tools, generating the FinancialApp project that we will build on throughout the book, and understanding the files the CLI creates. By the end, you will have a running application, a configured linter, and a production build -- the foundation for everything that follows.
 
+> **Prerequisites:** This book assumes working knowledge of TypeScript -- types, interfaces, classes, generics, arrow functions, and the common utility types. If you are coming from vanilla JavaScript or want a refresher on the subset Angular v21 relies on, see [Appendix A: TypeScript Essentials for Angular](appendix-a-typescript-primer.md) before continuing. For advanced TypeScript patterns (branded types, mapped types, OpenAPI code generation), see [Chapter 31](ch31-advanced-typescript-openapi.md).
+
 ## Tooling
 
 ### Development Environment
@@ -363,6 +365,105 @@ npx webpack-bundle-analyzer dist/financial-app/stats.json
 ```
 
 Keeping an eye on bundle sizes from the start prevents surprises when the application grows. We will revisit build optimization techniques in [Chapter 17](ch17-defer-ssr-hydration.md) when we cover `@defer` blocks and lazy loading.
+
+## Deploying an Angular App
+
+A production build produces a folder of static files. Deploying those files is almost independent of Angular -- the same `dist/` output can live behind nginx, inside a Docker container, on a static hosting provider like Netlify or Vercel, or in an S3 bucket fronted by CloudFront. This section covers the mechanics: what the build emits, how to configure routing-friendly hosting, and which cache headers avoid stale bundles after a deploy.
+
+### Build Output Anatomy
+
+After `ng build`, inspect `dist/financial-app/browser/`:
+
+```
+dist/financial-app/browser/
+├── index.html
+├── main-<HASH>.js
+├── polyfills-<HASH>.js
+├── styles-<HASH>.css
+├── chunk-<HASH>.js        # lazy-loaded routes
+├── favicon.ico
+└── assets from public/
+```
+
+Each JavaScript and CSS file has a content hash in its filename. The hash changes whenever the file's contents change. `index.html` references the current hashes, so it must never be cached aggressively -- otherwise browsers serve a stale `index.html` that references bundle filenames that no longer exist. Everything else is safe to cache effectively forever because the filename itself changes on every rebuild.
+
+Pass `--stats-json` to emit a `stats.json` summary suitable for bundle analyzers:
+
+```bash
+ng build --stats-json
+npx webpack-bundle-analyzer dist/financial-app/browser/stats.json
+```
+
+### `--base-href` and Subpath Hosting
+
+If your app serves from the root of a domain (`https://app.example.com/`), the default configuration just works. If it serves from a subpath (`https://example.com/finance/`), build with an explicit base href so the router and asset URLs are rewritten correctly:
+
+```bash
+ng build --base-href=/finance/
+```
+
+The value ends up in the generated `<base href="/finance/">` inside `index.html`. The router uses it to construct every navigation URL; the bundler uses it to resolve asset imports. Forgetting the trailing slash is a common source of broken deployments.
+
+### Static Hosting Targets
+
+Most deployments fall into one of these buckets:
+
+- **Netlify, Vercel, Cloudflare Pages.** Point the provider at your Git repository, set the build command to `ng build` and the output directory to `dist/financial-app/browser/`. SPA fallback routing is configured automatically on Netlify (`_redirects` or `netlify.toml`) and Vercel (`vercel.json` with a catch-all rewrite).
+- **S3 + CloudFront.** Upload the `dist/financial-app/browser/` contents to S3, set `index.html` as the default root object, and configure CloudFront to return `200 -> /index.html` for 403 and 404 responses. This mimics SPA fallback at the CDN edge.
+- **GitHub Pages.** Build with `--base-href=/<repo-name>/` to match the GitHub Pages URL scheme. Commit the `dist/` folder to a `gh-pages` branch or use the `gh-pages` npm package.
+- **Docker + nginx.** Copy the build output into an nginx image and ship it wherever you run containers.
+
+### Nginx with SPA Fallback and Cache Headers
+
+Here is a minimal nginx config that serves the app correctly -- SPA routes fall back to `index.html`, hashed assets are cached aggressively, and `index.html` is always revalidated:
+
+```nginx
+server {
+  listen 80;
+  server_name app.example.com;
+  root /usr/share/nginx/html;
+
+  # Hashed bundles: cache forever
+  location ~* \.(?:js|css|woff2?|png|jpg|svg|ico)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    try_files $uri =404;
+  }
+
+  # index.html: never cache
+  location = /index.html {
+    add_header Cache-Control "no-store, no-cache, must-revalidate";
+    expires -1;
+  }
+
+  # SPA fallback: route any unknown path to index.html
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}
+```
+
+The companion `Dockerfile` for a Docker deployment is just three stages:
+
+```dockerfile
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build -- --configuration=production
+
+FROM nginx:1.27-alpine
+COPY --from=build /app/dist/financial-app/browser /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+```
+
+### When You Need More
+
+This section deliberately stops at static hosting. Two chapters cover the next steps:
+
+- [Chapter 17](ch17-defer-ssr-hydration.md) -- server-side rendering, hydration, and prerendering. If your app needs SEO, social previews, or fast first-paint on slow networks, start there.
+- [Chapter 26](ch26-pwa-service-workers.md) -- PWA deployment, service-worker cache invalidation, and push notifications. Service workers add another layer of caching that must be coordinated with the `index.html` cache-control headers above.
 
 ## Summary
 

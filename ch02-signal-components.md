@@ -471,6 +471,255 @@ transactionResource = httpResource<Transaction[]>(() =>
 
 Changing `accountId` triggers a new HTTP request with no additional code. We will revisit `httpResource` and its sibling `resource()` in [Chapter 3](ch03-reactive-signals.md) when we discuss the reactive signal graph in detail.
 
+### Advanced HTTP
+
+`HttpClient.get(url)` and `httpResource` cover the common cases, but real applications need more. File uploads report progress. Long-running requests get cancelled when a user navigates away. Some requests need custom headers, some need binary responses, and modern backends increasingly stream data rather than return it all at once. Angular's HTTP layer supports every one of these patterns -- they just require a few extra options.
+
+#### File Upload with Progress
+
+The FinancialApp lets users import bulk transactions from a CSV. The import takes seconds, not milliseconds, and the UI must show a progress bar. Two `HttpClient` options unlock this: `reportProgress: true` and `observe: 'events'`.
+
+```typescript
+// apps/financial-app/src/app/features/transactions/import/transaction-import.service.ts
+import { inject, Injectable } from '@angular/core';
+import { HttpClient, HttpEvent, HttpEventType, HttpRequest } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+
+export type ImportProgress =
+  | { state: 'uploading'; percent: number }
+  | { state: 'processing' }
+  | { state: 'complete'; importedCount: number };
+
+@Injectable({ providedIn: 'root' })
+export class TransactionImportService {
+  private http = inject(HttpClient);
+
+  import(file: File): Observable<ImportProgress> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+
+    const req = new HttpRequest('POST', '/api/transactions/import', form, {
+      reportProgress: true,
+    });
+
+    return this.http.request<{ importedCount: number }>(req).pipe(
+      map((event: HttpEvent<{ importedCount: number }>): ImportProgress => {
+        switch (event.type) {
+          case HttpEventType.UploadProgress: {
+            const total = event.total ?? file.size;
+            const percent = Math.round((100 * event.loaded) / total);
+            return { state: 'uploading', percent };
+          }
+          case HttpEventType.Response:
+            return { state: 'complete', importedCount: event.body?.importedCount ?? 0 };
+          default:
+            return { state: 'processing' };
+        }
+      }),
+    );
+  }
+}
+```
+
+Instead of a single response, the request emits a stream of `HttpEvent` values: `Sent`, `UploadProgress`, `ResponseHeader`, `Response`, and so on. The service maps that raw stream to a UI-friendly `ImportProgress` discriminated union.
+
+The consuming component converts the observable to a signal with `toSignal`, then renders progress from the signal:
+
+```typescript
+import { Component, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { Observable } from 'rxjs';
+import { ImportProgress, TransactionImportService } from './transaction-import.service';
+
+@Component({
+  selector: 'app-transaction-import',
+  templateUrl: './transaction-import.component.html',
+})
+export class TransactionImportComponent {
+  private importer = inject(TransactionImportService);
+
+  private progress$ = signal<Observable<ImportProgress> | null>(null);
+  progress = toSignal(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    this.progress$() ?? (null as any),
+    { initialValue: null },
+  );
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.progress$.set(this.importer.import(file));
+  }
+}
+```
+
+The template renders the three states from the discriminated union:
+
+```html
+@let p = progress();
+@if (p?.state === 'uploading') {
+  <progress [value]="p.percent" max="100"></progress>
+  <span>{{ p.percent }}%</span>
+} @else if (p?.state === 'processing') {
+  <span>Processing file on server...</span>
+} @else if (p?.state === 'complete') {
+  <span>Imported {{ p.importedCount }} transactions.</span>
+}
+```
+
+#### Request Cancellation
+
+An in-flight HTTP request is an `Observable` subscription. Unsubscribing cancels the request -- Angular sends `fetch`'s `AbortSignal` to the browser, which tears down the connection. The modern way to scope a subscription to a component's lifetime is `takeUntilDestroyed`:
+
+```typescript
+import { Component, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpClient } from '@angular/common/http';
+
+@Component({ /* ... */ })
+export class TransactionSearchComponent {
+  private http = inject(HttpClient);
+
+  search(term: string): void {
+    this.http
+      .get<Transaction[]>(`/api/transactions?q=${encodeURIComponent(term)}`)
+      .pipe(takeUntilDestroyed())
+      .subscribe((results) => { /* ... */ });
+  }
+}
+```
+
+When the component is destroyed, `takeUntilDestroyed` completes the observable, Angular unsubscribes, and the HTTP request is cancelled mid-flight. For multiple rapid-fire searches you usually also want `switchMap` to cancel the previous request when a new one starts -- covered in [Chapter 3](ch03-reactive-signals.md)'s RxJS section.
+
+`httpResource` handles this automatically: if the URL function re-evaluates while a request is in flight, the previous request is cancelled before the new one starts, and the resource cleans up on destroy. That is the main reason `httpResource` exists -- it encapsulates the cancellation and loading-state boilerplate that naked `HttpClient` requires you to write by hand.
+
+If you need to pass an explicit `AbortSignal` (for example, to integrate with `AbortController` driven by user input), use the `fetch`-based API described in the streaming section below.
+
+#### Custom Headers and `HttpContext`
+
+For one-off headers, set them on the request:
+
+```typescript
+this.http.post<Account>('/api/accounts', draft, {
+  headers: { 'X-Idempotency-Key': crypto.randomUUID() },
+});
+```
+
+For per-request flags that an interceptor should consume -- "don't retry this one," "skip the global error toast," "this is an anonymous endpoint" -- use `HttpContext`. Context tokens let interceptors read request-scoped values without polluting headers:
+
+```typescript
+import { HttpContextToken } from '@angular/common/http';
+
+export const SKIP_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
+export const RETRY_COUNT = new HttpContextToken<number>(() => 0);
+```
+
+A component or service opts a request into the behavior:
+
+```typescript
+this.http.get<Transaction[]>('/api/transactions', {
+  context: new HttpContext()
+    .set(SKIP_ERROR_TOAST, true)
+    .set(RETRY_COUNT, 3),
+});
+```
+
+The interceptor reads the context on the way through:
+
+```typescript
+export const retryInterceptor: HttpInterceptorFn = (req, next) => {
+  const retries = req.context.get(RETRY_COUNT);
+  if (retries > 0) {
+    return next(req).pipe(retry(retries));
+  }
+  return next(req);
+};
+```
+
+[Chapter 23](ch23-error-handling.md) builds a full retry-with-backoff interceptor on this pattern.
+
+#### Binary Responses
+
+Sometimes the response is not JSON. Downloading a PDF account statement needs `responseType: 'blob'`:
+
+```typescript
+downloadStatement(accountId: number): void {
+  this.http
+    .get(`/api/accounts/${accountId}/statement`, {
+      responseType: 'blob',
+      observe: 'response',
+    })
+    .subscribe((response) => {
+      const blob = response.body!;
+      const contentDisposition = response.headers.get('content-disposition') ?? '';
+      const filename = /filename="?([^"]+)"?/.exec(contentDisposition)?.[1] ?? 'statement.pdf';
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+}
+```
+
+`observe: 'response'` gives access to headers so we can read the filename the server chose. The `URL.createObjectURL` / `revokeObjectURL` pair avoids leaking the blob after the download starts.
+
+#### Server-Sent Events and Streaming Responses
+
+`HttpClient` is request/response oriented. For streaming -- an LLM assistant that types one token at a time, a live feed of transaction updates -- reach for the underlying `fetch` API and consume the response body as a `ReadableStream`. Pair it with `toSignal` to bind the accumulated output to the template:
+
+```typescript
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+
+@Injectable({ providedIn: 'root' })
+export class AssistantService {
+  private destroyRef = inject(DestroyRef);
+
+  ask(prompt: string) {
+    const answer = signal('');
+    const controller = new AbortController();
+    this.destroyRef.onDestroy(() => controller.abort());
+
+    (async () => {
+      const response = await fetch('/api/assistant', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!response.body) return;
+
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        answer.update((current) => current + value);
+      }
+    })().catch((err) => {
+      if (err.name !== 'AbortError') console.error(err);
+    });
+
+    return answer.asReadonly();
+  }
+}
+```
+
+The component gets a read-only signal it can bind directly:
+
+```html
+<article>{{ answer() }}</article>
+```
+
+The `AbortController` + `DestroyRef.onDestroy` pattern scopes the connection to the component's lifetime. [Chapter 13](ch13-agentic-ui-hashbrown.md) builds on this for the Hashbrown assistant UI.
+
+#### Related Chapters
+
+- [Chapter 21](ch21-security-owasp.md) covers XSRF cookie setup and how `HttpClient` integrates with it.
+- [Chapter 23](ch23-error-handling.md) builds retry interceptors, global error handlers, and resource-error UI states.
+- [Chapter 26](ch26-pwa-service-workers.md) shows how to queue failed writes with Background Sync when offline.
+
 ---
 
 ## Sub Components with Properties and Events
@@ -631,6 +880,186 @@ For components that need multiple projection slots, use named slots with the `se
   <p>This goes into the default slot.</p>
 </app-transaction-card>
 ```
+
+## Component Styling & View Encapsulation
+
+Every Angular component keeps its styles scoped to its own template by default. Write a `.component.scss` file next to a component, import it via `styleUrl`, and the rules inside apply only to that component's template -- never leaking out, never clashing with styles in other components. That default behavior is called *view encapsulation*, and Angular gives you three strategies to control it: `Emulated` (the default), `ShadowDom`, and `None`.
+
+Most projects never change the default. But when they do, the decision has far-reaching implications for how theming, global libraries, and third-party widgets integrate. This section covers the three modes, when each is justified, and how to write component styles that stay maintainable as FinancialApp grows.
+
+### The Default: `ViewEncapsulation.Emulated`
+
+Consider `TransactionCardComponent`:
+
+```typescript
+// transaction-card.component.ts
+@Component({
+  selector: 'app-transaction-card',
+  templateUrl: './transaction-card.component.html',
+  styleUrl: './transaction-card.component.scss',
+})
+export class TransactionCardComponent { /* ... */ }
+```
+
+```scss
+// transaction-card.component.scss
+.card {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+}
+.card .amount {
+  font-weight: 600;
+}
+```
+
+When Angular compiles this, it generates a unique per-component attribute (for example `_ngcontent-c42`) and attaches it to every element in the template's rendered output. It then rewrites the CSS selectors to require that attribute:
+
+```css
+.card[_ngcontent-c42] {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+}
+.card[_ngcontent-c42] .amount[_ngcontent-c42] {
+  font-weight: 600;
+}
+```
+
+The attribute is invisible to developers and the CSS still looks like a normal cascade, but the rules can only match elements Angular rendered for *this* component. This is `ViewEncapsulation.Emulated` -- the encapsulation is simulated by attribute rewriting rather than enforced by the browser. It works in every browser, survives SSR, and does not prevent global styles (like your application's reset or typography) from cascading in.
+
+### `ViewEncapsulation.ShadowDom`
+
+Switch to Shadow DOM and Angular uses the platform's native encapsulation:
+
+```typescript
+import { Component, ViewEncapsulation } from '@angular/core';
+
+@Component({
+  selector: 'app-transaction-card',
+  templateUrl: './transaction-card.component.html',
+  styleUrl: './transaction-card.component.scss',
+  encapsulation: ViewEncapsulation.ShadowDom,
+})
+export class TransactionCardComponent { /* ... */ }
+```
+
+Now the component is rendered inside a shadow root attached to its host element. The browser enforces a hard boundary:
+
+- External CSS (including global `styles.scss`) cannot cross into the component.
+- The component's own styles cannot cross out.
+- Events that cross the boundary are retargeted; the DOM tree is split.
+
+Shadow DOM is the right choice for truly self-contained widgets -- embeddable third-party components, browser extensions, or micro-frontends where you need to guarantee that consumers cannot accidentally override your styles (see [Chapter 18](ch18-micro-frontends.md)). It is rarely the right choice for an application's own internal components, because you lose the ability to theme globally. Forms, overlays, and focus management also need extra care: a `<dialog>` rendered inside a shadow root will not absorb clicks outside its boundary the way a normal dialog does, and focus can escape the shadow tree in surprising ways.
+
+### `ViewEncapsulation.None`
+
+The escape hatch:
+
+```typescript
+import { Component, ViewEncapsulation } from '@angular/core';
+
+@Component({
+  selector: 'app-global-theme',
+  template: '<ng-content />',
+  styleUrl: './global-theme.component.scss',
+  encapsulation: ViewEncapsulation.None,
+})
+export class GlobalThemeComponent {}
+```
+
+The component's styles are injected as global stylesheets. They match any element anywhere in the page. This is useful when a component deliberately wants to style its projected content (slot-based themes), or when integrating a legacy CSS library that expects global class names. It is also a foot-gun. A single selector like `.title { color: red; }` in a `None`-encapsulated component will turn every `.title` in the application red. Prefer to colocate such styles in `src/styles.scss` where their global reach is explicit, and reserve `None` for components that genuinely need to style content outside their own template.
+
+### `:host` and `:host-context()`
+
+Inside `Emulated` or `ShadowDom` components, two special selectors target the component's host element:
+
+```scss
+// fin-button.component.scss
+:host {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  background: var(--fin-primary, #1a73e8);
+  color: white;
+}
+
+:host(.compact) {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+:host-context(.dark) {
+  background: var(--fin-primary-dark, #82b1ff);
+  color: #111;
+}
+```
+
+- `:host` matches the component's host element. It is the only way to style the host itself from inside the component's own stylesheet.
+- `:host(selector)` further narrows to hosts that also match `selector`. The example above changes padding when a parent adds the `.compact` class: `<app-fin-button class="compact">`.
+- `:host-context(selector)` matches the host when *any ancestor* matches `selector`. This is how a component participates in a theme switch without knowing where the theme toggle lives. Flipping `<body class="dark">` automatically retargets every `:host-context(.dark)` rule in the application.
+
+`:host-context()` works in both `Emulated` and `ShadowDom` modes. It is how FinancialApp's design system switches to dark mode without every component re-implementing the logic.
+
+### Class and Style Bindings vs Scoped CSS
+
+You often have two ways to apply a visual change: toggle a CSS class from the template, or write the rule in scoped CSS and let the component's state drive it. Class bindings are best for transient state:
+
+```html
+<div
+  class="transaction-row"
+  [class.pending]="transaction.pending"
+  [class.high-value]="transaction.amount > 10000">
+  <!-- ... -->
+</div>
+```
+
+```scss
+.transaction-row {
+  padding: 0.75rem;
+
+  &.pending { opacity: 0.6; }
+  &.high-value { border-left: 3px solid var(--fin-warning); }
+}
+```
+
+Avoid dynamic *style* bindings where a class will do. `[style.padding]="computePadding()"` runs the expression on every change detection cycle and produces an inline style that is harder to override and less cacheable. Use `[style.property]` bindings only when the value is genuinely dynamic -- positions driven by drag state, computed sizes, colors derived from data. See [Chapter 20](ch20-style-guide-structure.md) for the official style guide's recommendations on class and style bindings.
+
+### `::ng-deep` Is Deprecated -- Use Tokens Instead
+
+You will occasionally see older code use `::ng-deep` to pierce encapsulation and style a child component's internals:
+
+```scss
+// DON'T: reaches into a child's encapsulated styles
+:host ::ng-deep app-transaction-card .amount {
+  color: red;
+}
+```
+
+`::ng-deep` is deprecated and will be removed. The modern replacement is CSS custom properties (tokens). Parents expose the knobs they want children to tweak, and children read the tokens:
+
+```scss
+// transaction-card.component.scss
+.card {
+  background: var(--fin-card-bg, white);
+  color: var(--fin-card-fg, #111);
+}
+
+// parent.component.scss
+:host {
+  --fin-card-bg: #f8f9fa;
+  --fin-card-fg: #0b5ed7;
+}
+```
+
+CSS custom properties cross encapsulation boundaries automatically -- both emulated and shadow-DOM. The child defines sensible defaults with the second argument to `var()`. The parent (or a design-system wrapper) overrides them. [Chapter 27](ch27-material-design-system.md) builds the FinancialApp design system on this exact pattern: a foundation of `--fin-*` tokens consumed by every component, with light/dark themes switching whole sets of values from a single parent rule.
+
+### Choosing a Mode
+
+A decision matrix you can apply without thinking:
+
+- **Use `Emulated` (the default) for 99% of components.** Styles stay scoped, global themes still cascade, and tokens cross the boundary.
+- **Use `ShadowDom`** only when you need true isolation -- a widget embedded in third-party pages, a custom element published to npm, or a component in a micro-frontend where the host app's CSS must not leak in.
+- **Use `None`** only when the component's purpose is to provide global styles (a theme loader, a typography reset, a legacy-CSS wrapper). Prefer `src/styles.scss` when possible.
 
 ### Writable Inputs with ModelSignals
 
