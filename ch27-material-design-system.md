@@ -202,7 +202,99 @@ Angular Material provides accessible components following Material Design 3. For
 ng add @angular/material
 ```
 
-The schematic installs `@angular/material` and `@angular/cdk`. The custom theme maps FinancialApp's tokens to Material's theming system:
+The schematic installs `@angular/material` and `@angular/cdk`.
+
+### Generating a Material Theme
+
+Material Design 3 palettes -- primary, secondary, tertiary, neutral, neutral-variant, and error -- each contain 13 or more tones spanning light to dark. Hand-authoring those tones is tedious and error-prone; small deviations from the Material specification cause subtle contrast failures that only surface during accessibility audits. Angular Material ships two schematics that derive mathematically correct M3 palettes from seed colors, and every new design system should start with one of them.
+
+**`ng generate @angular/material:m3-theme`** is the primary schematic. It reads seed colors, applies Material's tonal palette algorithm, and writes an SCSS file with complete light and dark theme objects. Options:
+
+| Option | Description |
+|---|---|
+| `--primaryColor` | Hex code for the brand primary; the only required seed |
+| `--secondaryColor` | Optional; derived from `primaryColor` when omitted |
+| `--tertiaryColor` | Optional accent seed |
+| `--neutralColor` | Optional; controls surface and background tones |
+| `--neutralVariantColor` | Optional; controls subtle backgrounds and dividers |
+| `--errorColor` | Optional; defaults to Material's error red |
+| `--directory` | Output directory for the generated SCSS file |
+| `--themeFileName` | Filename (without extension) of the generated file |
+| `--includeHighContrast` | Generates a high-contrast variant for accessibility compliance |
+
+For FinancialApp, the seeds map directly to the brand palette. Commit the command to an npm script so that regenerating the theme is reproducible across the team:
+
+```json
+// financial-app/package.json (excerpt)
+{
+  "scripts": {
+    "generate:m3-theme": "ng generate @angular/material:m3-theme --primaryColor=\"#1a73e8\" --secondaryColor=\"#34a853\" --tertiaryColor=\"#fbbc04\" --errorColor=\"#d93025\" --directory=\"libs/shared/design-system/src/styles\" --themeFileName=\"_m3-theme\" --includeHighContrast=true"
+  }
+}
+```
+
+Running `npm run generate:m3-theme` produces `libs/shared/design-system/src/styles/_m3-theme.scss`. The file has a predictable structure:
+
+```scss
+// libs/shared/design-system/src/styles/_m3-theme.scss
+@use '@angular/material' as mat;
+
+$_palettes: (
+  primary: (
+    0: #000000, 10: #001b3d, 20: #002e69, 30: #004494, 40: #1a73e8,
+    50: #4c90ff, 60: #73abff, 70: #99c6ff, 80: #bcd7ff, 90: #dae2ff,
+    95: #edf0ff, 99: #fefbff, 100: #ffffff,
+  ),
+  secondary: ( /* tonal palette derived from #34a853 */ ),
+  tertiary:  ( /* tonal palette derived from #fbbc04 */ ),
+  neutral:   ( /* surface and background tones */ ),
+  neutral-variant: ( /* subtle backgrounds, dividers */ ),
+  error:     ( /* tonal palette derived from #d93025 */ ),
+);
+
+$light-theme: mat.define-theme((
+  color: ( theme-type: light, primary: $_palettes ),
+));
+
+$dark-theme: mat.define-theme((
+  color: ( theme-type: dark, primary: $_palettes ),
+));
+```
+
+The tonal maps at the top are machine-generated. The two `mat.define-theme(...)` calls at the bottom are what the rest of the design system consumes. Teams typically leave the palette maps alone (regenerate them when brand colors change) and hand-edit only the `mat.define-theme` call when they need to customize typography, density, or add extra config layers.
+
+**`ng generate @angular/material:theme-color`** is the narrower alternative. It generates a single tonal palette rather than a full theme. Use it when you need to add one additional semantic color -- for example, a "success" green for positive transaction amounts that is distinct from the tertiary palette -- to an existing theme:
+
+```bash
+ng generate @angular/material:theme-color --color="#2e7d32" --isDark=false
+```
+
+The output is a tonal palette map you paste into `_m3-theme.scss` or a sibling file.
+
+### Integrating Generated Palettes with FinancialApp Tokens
+
+The generator produces Material's theme object. The `_tokens.scss` file from earlier in this chapter provides app-level tokens (spacing, typography scale, iconography) that live *alongside* Material. Wire them together so `ThemeService` drives both:
+
+```scss
+// libs/shared/design-system/src/styles/_material-theme.scss
+@use '@angular/material' as mat;
+@use './m3-theme' as theme;
+
+html {
+  @include mat.all-component-themes(theme.$light-theme);
+  @include mat.theme((typography: Inter, density: 0));
+}
+
+[data-theme='dark'] {
+  @include mat.all-component-themes(theme.$dark-theme);
+}
+```
+
+The `ThemeService` from earlier in this chapter still toggles `data-theme` on the root element; now the toggle swaps Material's theme *and* the app tokens simultaneously. Wrapper components like `FinButton` and `FinFormField` can pull from both Material's `--mat-sys-*` CSS custom properties (which `mat.all-component-themes` emits) and the `--fin-*` tokens defined in `_tokens.scss`.
+
+When to regenerate vs hand-edit: regenerate whenever brand colors change, because hand-editing tones drifts from the M3 specification. Hand-edit the `mat.define-theme` call itself when adjusting typography, density, or adding config layers that are not color-related.
+
+The custom theme then maps FinancialApp's tokens to Material's theming system:
 
 ```scss
 // libs/shared/design-system/src/styles/_material-theme.scss

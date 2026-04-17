@@ -80,6 +80,12 @@ interface Holding {
 
 ## Chapter Index
 
+### Introduction
+
+| # | Chapter | File |
+|---|---------|------|
+| 0 | The Angular Ecosystem | [ch00-angular-ecosystem.md](ch00-angular-ecosystem.md) |
+
 ### Part I -- Fundamentals
 
 | # | Chapter | File |
@@ -136,7 +142,47 @@ interface Holding {
 | 30 | Advanced Monorepo & Nx Features | [ch30-advanced-nx.md](ch30-advanced-nx.md) |
 | 31 | Advanced TypeScript, OpenAPI Generation & Closed-Loop Workflow | [ch31-advanced-typescript-openapi.md](ch31-advanced-typescript-openapi.md) |
 
-### Part VI -- Appendices
+### Part VI -- Advanced Data & Real-Time
+
+| # | Chapter | File |
+|---|---------|------|
+| 32 | RxJS Deep Dive | [ch32-rxjs-deep-dive.md](ch32-rxjs-deep-dive.md) |
+| 33 | WebSockets & Real-Time Data | [ch33-websockets-realtime.md](ch33-websockets-realtime.md) |
+| 34 | File Handling | [ch34-file-handling.md](ch34-file-handling.md) |
+| 35 | Charts & Data Visualization | [ch35-charts.md](ch35-charts.md) |
+
+### Part VII -- Platform Features & Mobile
+
+| # | Chapter | File |
+|---|---------|------|
+| 36 | Drag and Drop | [ch36-drag-and-drop.md](ch36-drag-and-drop.md) |
+| 37 | Angular Animations Deep Dive | [ch37-animations-deep-dive.md](ch37-animations-deep-dive.md) |
+| 38 | Web Workers | [ch38-web-workers.md](ch38-web-workers.md) |
+| 39 | Angular Elements | [ch39-angular-elements.md](ch39-angular-elements.md) |
+| 40 | Capacitor & Mobile | [ch40-capacitor-mobile.md](ch40-capacitor-mobile.md) |
+
+### Part VIII -- Operations & Enterprise
+
+| # | Chapter | File |
+|---|---------|------|
+| 41 | CI/CD & Deployment | [ch41-cicd-deployment.md](ch41-cicd-deployment.md) |
+| 42 | Observability & Production Monitoring | [ch42-observability.md](ch42-observability.md) |
+| 43 | Feature Flags | [ch43-feature-flags.md](ch43-feature-flags.md) |
+| 44 | Optimistic UI & Offline Sync | [ch44-optimistic-ui.md](ch44-optimistic-ui.md) |
+| 45 | Multi-Step Forms & Wizards | [ch45-multi-step-forms.md](ch45-multi-step-forms.md) |
+| 46 | Compliance for Financial Apps | [ch46-compliance.md](ch46-compliance.md) |
+
+### Part IX -- Advanced Angular Mechanics
+
+| # | Chapter | File |
+|---|---------|------|
+| 47 | Dependency Injection Deep Dive | [ch47-di-deep-dive.md](ch47-di-deep-dive.md) |
+| 48 | Debugging Angular Applications | [ch48-debugging.md](ch48-debugging.md) |
+| 49 | Screen Reader Testing & Advanced A11y | [ch49-screen-reader-testing.md](ch49-screen-reader-testing.md) |
+| 50 | Command Palette & Keyboard Shortcuts | [ch50-command-palette.md](ch50-command-palette.md) |
+| 51 | Migration Guides | [ch51-migrations.md](ch51-migrations.md) |
+
+### Part X -- Appendices
 
 | # | Appendix | File |
 |---|----------|------|
@@ -152,11 +198,10 @@ interface Holding {
 
 A few topics are intentionally out of scope. Pointers are provided so you know where to go when you need them:
 
-- **AngularJS 1.x to Angular migration (`ngUpgrade`).** AngularJS reached end-of-life in 2022. If you are maintaining an AngularJS app, the official [AngularJS upgrade guide](https://angular.dev/tools/upgrade/upgrade-vs-downgrade) is the authoritative resource.
-- **Mobile frameworks (NativeScript, Ionic).** The book focuses on web, SSR, and PWA deployment. For native mobile, see the [Ionic](https://ionicframework.com/docs/angular/overview) or [NativeScript](https://docs.nativescript.org/) documentation.
+- **NativeScript as a mobile runtime.** [Chapter 40](ch40-capacitor-mobile.md) covers Capacitor for iOS/Android deployment of Angular apps; Ionic and NativeScript are mentioned briefly. If you need NativeScript-specific guidance, see the [NativeScript documentation](https://docs.nativescript.org/).
 - **Deep-dive coverage of classic Reactive Forms.** Signal Forms is the v21 default and receives full treatment in [Chapter 6](ch06-signal-forms.md). A compact "Reactive Forms Compatibility" section at the end of Chapter 6 covers interop for legacy-code maintainers. For the complete classic API, see the [Angular Forms guide](https://angular.dev/guide/forms).
 - **Plain Redux as a library.** The Redux pattern is covered through [NgRx Signal Store](ch09-ngrx-signal-store.md), which is the idiomatic choice in the signal era.
-- **Deployment of backend services.** [Appendix B](appendix-b-e2e-workflow.md) and the sibling adapter appendices ([B1 Node + Express](appendix-b1-backend-express.md), [B2 Spring Boot](appendix-b2-backend-spring.md), [B3 Go](appendix-b3-backend-go.md)) cover the contract layer between the backend and Angular. How those backends are deployed (Docker, k8s, Serverless, Kubernetes) is out of scope.
+- **Backend service implementation details.** [Appendix B](appendix-b-e2e-workflow.md) and the sibling adapter appendices ([B1 Node + Express](appendix-b1-backend-express.md), [B2 Spring Boot](appendix-b2-backend-spring.md), [B3 Go](appendix-b3-backend-go.md)) cover the contract layer between the backend and Angular. [Chapter 41](ch41-cicd-deployment.md) covers deployment of the Angular app itself.
 
 ---
 
