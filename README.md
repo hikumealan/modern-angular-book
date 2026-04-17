@@ -134,13 +134,17 @@ interface Holding {
 | 28 | Storybook for Component Libraries | [ch28-storybook.md](ch28-storybook.md) |
 | 29 | AI Tooling, MCP & Agent Skills | [ch29-ai-tooling-mcp-skills.md](ch29-ai-tooling-mcp-skills.md) |
 | 30 | Advanced Monorepo & Nx Features | [ch30-advanced-nx.md](ch30-advanced-nx.md) |
-| 31 | Advanced TypeScript & OpenAPI Service Generation | [ch31-advanced-typescript-openapi.md](ch31-advanced-typescript-openapi.md) |
+| 31 | Advanced TypeScript, OpenAPI Generation & Closed-Loop Workflow | [ch31-advanced-typescript-openapi.md](ch31-advanced-typescript-openapi.md) |
 
 ### Part VI -- Appendices
 
 | # | Appendix | File |
 |---|----------|------|
-| A | TypeScript Essentials for Angular | [appendix-a-typescript-primer.md](appendix-a-typescript-primer.md) |
+| A  | TypeScript Essentials for Angular | [appendix-a-typescript-primer.md](appendix-a-typescript-primer.md) |
+| B  | End-to-End Contract-Driven Angular Workflow | [appendix-b-e2e-workflow.md](appendix-b-e2e-workflow.md) |
+| B1 | Backend Adapter: Node + Express | [appendix-b1-backend-express.md](appendix-b1-backend-express.md) |
+| B2 | Backend Adapter: Spring Boot | [appendix-b2-backend-spring.md](appendix-b2-backend-spring.md) |
+| B3 | Backend Adapter: Go | [appendix-b3-backend-go.md](appendix-b3-backend-go.md) |
 
 ---
 
@@ -152,6 +156,7 @@ A few topics are intentionally out of scope. Pointers are provided so you know w
 - **Mobile frameworks (NativeScript, Ionic).** The book focuses on web, SSR, and PWA deployment. For native mobile, see the [Ionic](https://ionicframework.com/docs/angular/overview) or [NativeScript](https://docs.nativescript.org/) documentation.
 - **Deep-dive coverage of classic Reactive Forms.** Signal Forms is the v21 default and receives full treatment in [Chapter 6](ch06-signal-forms.md). A compact "Reactive Forms Compatibility" section at the end of Chapter 6 covers interop for legacy-code maintainers. For the complete classic API, see the [Angular Forms guide](https://angular.dev/guide/forms).
 - **Plain Redux as a library.** The Redux pattern is covered through [NgRx Signal Store](ch09-ngrx-signal-store.md), which is the idiomatic choice in the signal era.
+- **Deployment of backend services.** [Appendix B](appendix-b-e2e-workflow.md) and the sibling adapter appendices ([B1 Node + Express](appendix-b1-backend-express.md), [B2 Spring Boot](appendix-b2-backend-spring.md), [B3 Go](appendix-b3-backend-go.md)) cover the contract layer between the backend and Angular. How those backends are deployed (Docker, k8s, Serverless, Kubernetes) is out of scope.
 
 ---
 

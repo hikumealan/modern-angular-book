@@ -531,6 +531,71 @@ For teams using Zod schemas alongside OpenAPI, libraries like `zod-to-openapi` c
 
 ---
 
+## Closing the Loop with a FastAPI Backend
+
+Everything above makes your Angular frontend internally consistent, but it stops at the backend boundary. The `http.get<Account>()` call believes what you tell it; the server is free to return whatever shape it produces and neither side enforces agreement at runtime. The last step -- the hardest one to retrofit after the fact -- is closing the loop so that the backend's own source code *generates* the contract the frontend consumes, and CI refuses to ship if anything drifts.
+
+This section is the conceptual bird's-eye view; [Appendix B](appendix-b-e2e-workflow.md) is the hands-on recipe with working scripts, Nx library layout, and CI workflow.
+
+### Why a Closed Loop Matters
+
+Three classes of bug disappear once the backend owns the contract and tools regenerate every frontend artifact from it.
+
+- **Silent rename drift.** The backend renames `Account.balance` to `Account.currentBalance`. The frontend still compiles. A user sees `$0` in the UI and the bug ships. In a closed loop, the regeneration step produces a diff that fails CI: the frontend literally cannot consume a schema it does not know about.
+- **"Types" that aren't validation.** `http.get<Account>()` is a TypeScript cast, not a runtime check. A malformed response still produces an object the compiler believes is an `Account` -- any downstream `account.balance * 0.05` quietly produces `NaN`. When the generated client pipes responses through Zod, every response is validated at the boundary.
+- **Three copies of every validation rule.** The same "amount must be at least 0.01" rule lives in the backend validator, the OpenAPI spec, and the frontend form. Any one drifting breaks the other two. A single source of truth reduces the rule to one place that every layer consumes.
+
+The FinancialApp's running example in Appendix B uses **FastAPI + Pydantic** as the backend because Pydantic is the canonical Python schema library and FastAPI's `/openapi.json` endpoint is free out of the box. The four frontend strategies below work identically against any backend that produces an OpenAPI 3.x spec.
+
+### Four Topology Options
+
+Each strategy is a different answer to "who owns the contract, and how do the frontend artifacts stay in lock-step?" Pick by team composition, backend stack, and how much framework integration matters.
+
+1. **FastAPI-primary with `openapi-zod-client`.** Pydantic is the one source. A single generator emits both Zod schemas and a `Zodios` fetch client in one pass. Simplest pipeline. Best fit when your team is Python-first and wants runtime validation baked into every call with zero framework boilerplate.
+
+2. **Zod + Pydantic co-equal with CI diff.** Frontend authors its own Zod schemas, backend authors Pydantic models, and a CI job serializes both to OpenAPI and runs `@redocly/openapi-diff` to catch breaking drift. No generation on either side. Best fit when the frontend has form-layer constraints (UX-specific messages, multi-field validators) that genuinely should not round-trip to the backend.
+
+3. **Pydantic-primary via `datamodel-code-generator` + `ts-to-zod`.** Two-stage pipeline: OpenAPI -> TypeScript types -> Zod schemas. More configuration to tune, but handles complex inheritance and discriminated unions the simpler generators miss. Best fit for domain models with deep `allOf` hierarchies or custom `Annotated[]` transformations.
+
+4. **OpenAPI Generator `typescript-angular`.** Produces an entire Angular library: `@Injectable({ providedIn: 'root' })` services returning `Observable<T>`, TypeScript interface models, a `Configuration` class. Uses `HttpClient` under the hood, so every pattern in this book (interceptors, XSRF, `httpResource`, SSR transfer cache) works unchanged. Publishable as an npm package via `ng-packagr`. Best fit for enterprise shops running multiple Angular apps against one API, or when the client library needs to ship externally.
+
+### The Pipeline
+
+```mermaid
+flowchart LR
+  Pydantic[Pydantic models] --> FastAPI["FastAPI app"]
+  FastAPI -->|"/openapi.json"| Spec[OpenAPI 3.1 spec]
+  Spec --> ZodClient["Strategy A<br/>openapi-zod-client"]
+  Spec --> Diff["Strategy B<br/>zod-to-openapi diff"]
+  Spec --> TsToZod["Strategy C<br/>datamodel-code-gen<br/>+ ts-to-zod"]
+  Spec --> NgClient["Strategy D<br/>typescript-angular"]
+  ZodClient --> SignalForms[Signal Forms]
+  ZodClient --> DynForm[DynamicFormComponent]
+  NgClient --> AppServices[Angular services]
+  Diff -->|"fails on breaking"| CI{CI contract gate}
+  ZodClient -->|"committed output"| CI
+  TsToZod -->|"committed output"| CI
+  NgClient -->|"committed output"| CI
+```
+
+Each arrow into `CI` represents a `git diff --exit-code` gate: the generator runs, its output is compared to what's committed, and any drift fails the build. The gate is the point of the whole apparatus.
+
+### Contract Testing
+
+Generating the artifacts is half the story. The other half is using them as the anchor for every test layer. Playwright specs round-trip the real FastAPI through the generated Zod schemas, validating each response's *actual* shape (not just what the spec says it should be). Vitest unit tests use the same Zod schemas to validate service responses, catching cases where middleware or serializers diverge from the declared contract. And a small `libs/shared/testing/` library exposes `toMatchSchema`, `zod-mock` factories, and an `mswHandlersFromSpec` generator so tests never hand-maintain fixtures that can drift. Appendix B's testing section covers the patterns in detail.
+
+### When the Backend Isn't Python
+
+Every one of the four strategies is fundamentally backend-agnostic -- they consume OpenAPI 3.x JSON and don't care how it was produced. The same patterns apply to:
+
+- **Node + Express** with `@asteasolutions/zod-to-openapi` (Zod-first, enables a shared Zod package across frontend and backend) or `tsoa` (decorator-first).
+- **Spring Boot** with `springdoc-openapi` and Jakarta Bean Validation on Java records.
+- **Go** with `oapi-codegen` (spec-first) or `swaggo/swag` (code-first).
+
+Backend-specific gotchas -- Jackson date serialization, Go's `omitempty` semantics, shared-Zod monorepo patterns on Node -- live in the per-adapter appendices [B1](appendix-b1-backend-express.md), [B2](appendix-b2-backend-spring.md), and [B3](appendix-b3-backend-go.md). Each adapter is a ~4-page recipe following the same template so you can jump to your stack without reading the others.
+
+---
+
 ## Summary
 
 TypeScript's advanced type features and OpenAPI code generation are complementary tools that serve the same goal: making the boundary between what you *think* your code does and what it *actually* does as thin as possible.
@@ -546,5 +611,6 @@ TypeScript's advanced type features and OpenAPI code generation are complementar
 - **Zod schemas** unify validation across frontend and backend, with `z.infer` deriving TypeScript types from the schema itself.
 - **Dynamic form generation** from OpenAPI metadata provides a practical escape hatch for admin screens.
 - **CI checks** that regenerate types and fail on diff keep everything aligned as the API evolves.
+- **Closed-loop FastAPI workflow** (covered in detail in [Appendix B](appendix-b-e2e-workflow.md)) takes generation from convenience to guarantee: the backend owns the contract, four alternative frontend topologies regenerate artifacts from it, and CI refuses to ship when anything drifts -- across Python, Node, Java, or Go backends.
 
 The patterns in this chapter build on the architecture from [Chapter 8](ch08-architecture.md), the form layer from [Chapter 6](ch06-signal-forms.md), the routing primitives from [Chapter 4](ch04-router.md), and the signal model from [Chapter 3](ch03-reactive-signals.md). Together, they turn TypeScript from a type checker into a design tool that shapes how you think about your domain, your API contracts, and the seams between them.
