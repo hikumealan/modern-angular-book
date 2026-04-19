@@ -1,6 +1,6 @@
 # Chapter 14: Monorepos & Reusable Libraries
 
-In [Chapter 8](ch08-architecture.md) we drew boundaries inside the FinancialApp -- vertical slices, barrel exports, Sheriff rules. Those boundaries lived within a single project. As the application matures, some of that code wants to escape. The shared UI components could serve a second application. The domain models belong in a package that backend-for-frontend services also consume.
+In [Chapter 11](ch09-architecture.md) we drew boundaries inside the FinancialApp -- vertical slices, barrel exports, Sheriff rules. Those boundaries lived within a single project. As the application matures, some of that code wants to escape. The shared UI components could serve a second application. The domain models belong in a package that backend-for-frontend services also consume.
 
 This chapter covers the two primary strategies for managing multiple projects and reusable libraries in the Angular ecosystem: the Angular CLI's built-in workspace support and Nx. We will work through both using the FinancialApp, which is already structured as an Nx monorepo in the companion code (`financial-app/`).
 
@@ -58,7 +58,7 @@ export { Portfolio, Holding } from './lib/portfolio.model';
 export { Client, ClientRef } from './lib/client.model';
 ```
 
-Anything not exported through `public-api.ts` is internal to the library. This mirrors the information hiding pattern from [Chapter 8](ch08-architecture.md), but now with build-level enforcement -- consumers literally cannot import unexported symbols when the library is built and distributed as a package.
+Anything not exported through `public-api.ts` is internal to the library. This mirrors the information hiding pattern from [Chapter 11](ch09-architecture.md), but now with build-level enforcement -- consumers literally cannot import unexported symbols when the library is built and distributed as a package.
 
 Libraries can also define **secondary entry points** for tree-shakable sub-packages. Each sub-directory with its own `ng-package.json` becomes an importable path (e.g., `shared-ui/data-table`), and the bundler tree-shakes everything the consumer does not reference.
 
@@ -195,7 +195,7 @@ Each project has its own `project.json` instead of being registered in a monolit
 
 ### Module Boundaries
 
-Nx provides built-in module boundary enforcement through project tags and ESLint rules. For applications using the vertical slice architecture from [Chapter 8](ch08-architecture.md), **Sheriff** offers a more ergonomic alternative -- it works at the file and directory level, enforcing boundaries both within and across Nx libraries.
+Nx provides built-in module boundary enforcement through project tags and ESLint rules. For applications using the vertical slice architecture from [Chapter 11](ch09-architecture.md), **Sheriff** offers a more ergonomic alternative -- it works at the file and directory level, enforcing boundaries both within and across Nx libraries.
 
 The FinancialApp's `sheriff.config.ts` defines a tagging scheme based on directory structure:
 
@@ -365,4 +365,4 @@ The practical decision tree is straightforward:
 
 Each step builds on the previous one. You can start with CLI libraries and adopt Nx later without restructuring your code. The path mappings, barrel exports, and Sheriff rules you set up today carry forward unchanged.
 
-In [Chapter 8](ch08-architecture.md) we designed the boundaries. In this chapter, we gave those boundaries physical form as libraries, packages, and workspace projects. The architecture is no longer just a convention -- it is encoded in the build system.
+In [Chapter 11](ch09-architecture.md) we designed the boundaries. In this chapter, we gave those boundaries physical form as libraries, packages, and workspace projects. The architecture is no longer just a convention -- it is encoded in the build system.

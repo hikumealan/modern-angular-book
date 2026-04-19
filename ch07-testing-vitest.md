@@ -657,4 +657,4 @@ Angular v21 makes Vitest the standard test runner, bringing ESM-native speed and
 - **Fake timers** (`vi.useFakeTimers()`, `vi.advanceTimersByTime()`) eliminate real delays from tests, making time-dependent behavior deterministic and fast.
 - **Coverage** should be measured, enforced with thresholds, and focused on business-critical paths rather than vanity metrics.
 
-Spec files for every component, service, and store in the FinancialApp companion codebase demonstrate these techniques in context. In [Chapter 8](ch08-architecture.md), we will explore how to structure your application so that the boundaries you test against remain stable as the codebase scales.
+Spec files for every component, service, and store in the FinancialApp companion codebase demonstrate these techniques in context. In [Chapter 11](ch09-architecture.md), we will explore how to structure your application so that the boundaries you test against remain stable as the codebase scales.

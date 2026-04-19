@@ -419,7 +419,7 @@ NgRx Signal Store provides that structure. It builds on the same primitives (`si
 - **`withEntities()`** for normalized entity collections with CRUD operations.
 - **`withHooks()`** for lifecycle management tied to the store's injector.
 
-The migration from a hand-rolled signal store to NgRx Signal Store is incremental -- the external API (signals read in templates) remains identical. We will build a full NgRx Signal Store implementation in [Chapter 9](ch09-ngrx-signal-store.md).
+The migration from a hand-rolled signal store to NgRx Signal Store is incremental -- the external API (signals read in templates) remains identical. We will build a full NgRx Signal Store implementation in [Chapter 12](ch10-ngrx-signal-store.md).
 
 ## Summary
 
@@ -435,4 +435,4 @@ The key patterns from this chapter:
 - Use `DestroyRef` for cleanup in route-scoped services instead of implementing `OnDestroy`.
 - Use `provide*` factory functions to package domain-level providers into reusable configuration units.
 
-These primitives handle the vast majority of state management needs. When a feature outgrows them -- when you need entity normalization, devtools, or plugin-based extensibility -- NgRx Signal Store offers a structured upgrade path without abandoning the signal-based model. We will explore that path in [Chapter 9](ch09-ngrx-signal-store.md).
+These primitives handle the vast majority of state management needs. When a feature outgrows them -- when you need entity normalization, devtools, or plugin-based extensibility -- NgRx Signal Store offers a structured upgrade path without abandoning the signal-based model. We will explore that path in [Chapter 12](ch10-ngrx-signal-store.md).

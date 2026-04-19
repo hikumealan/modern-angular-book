@@ -4,7 +4,7 @@
 
 This chapter is a reference. Newcomers use it to orient themselves in the package landscape; experienced developers return to it when they need to remember which package owns which concern. It is not meant to be read linearly. Skim the category headings, find the package you need, and follow the cross-reference to the chapter where it is used in depth.
 
-> **Version note:** Versions shown track Angular v21 stable, the baseline used throughout the companion FinancialApp. Run `ng update` or `nx migrate` to upgrade an existing workspace -- see [Chapter 30](ch30-advanced-nx.md) for the upgrade workflow and [Chapter 51](ch51-migrations.md) for major-version migrations.
+> **Version note:** Versions shown track Angular v21 stable, the baseline used throughout the companion FinancialApp. Run `ng update` or `nx migrate` to upgrade an existing workspace -- see [Chapter 37](ch15-advanced-nx.md) for the upgrade workflow and [Chapter 42](ch50-migrations.md) for major-version migrations.
 
 ---
 
@@ -20,9 +20,9 @@ These are the packages nearly every Angular application depends on. `@angular/co
 | `@angular/common` | `~21.0.0` | dep | Common directives and pipes you use in nearly every template: `NgIf` and `NgFor` (superseded by `@if`/`@for` in v21), `CurrencyPipe`, `DatePipe`, `DecimalPipe`, `NgOptimizedImage`, the `HttpClient` (via `@angular/common/http`), the `Location` service, and locale registration helpers. |
 | `@angular/compiler` | `~21.0.0` | dep | The Angular template compiler runtime. Required for JIT compilation; still bundled at build time even when AOT compilation is used. You rarely import from it directly. |
 | `@angular/compiler-cli` | `~21.0.0` | dev | The AOT compiler invoked by the build pipeline. Transforms templates into optimized JavaScript at build time. You interact with it via the CLI, not directly. |
-| `@angular/router` | `~21.0.0` | dep | The router: `Routes`, `provideRouter`, guards (`CanActivateFn`, `CanDeactivateFn`), resolvers (`ResolveFn`), and `RouterLink`/`RouterOutlet`. Signal-based input binding lives here (`withComponentInputBinding`). Covered in [Chapter 4](ch04-router.md) and [Chapter 12](ch12-initialization-routes.md). |
+| `@angular/router` | `~21.0.0` | dep | The router: `Routes`, `provideRouter`, guards (`CanActivateFn`, `CanDeactivateFn`), resolvers (`ResolveFn`), and `RouterLink`/`RouterOutlet`. Signal-based input binding lives here (`withComponentInputBinding`). Covered in [Chapter 4](ch04-router.md) and [Chapter 48](ch13-initialization-routes.md). |
 | `@angular/forms` | `~21.0.0` | dep | Template-driven forms (legacy `NgModel`), reactive forms (legacy `FormControl`), and the new **Signal Forms** API (`formField`, `formGroup`, `formArray`) introduced in v21. See [Chapter 6](ch06-signal-forms.md). |
-| `@angular/animations` | `~21.0.0` | dep | The animation engine: `trigger`, `state`, `transition`, `animate`, `keyframes`, `query`, `stagger`. Optional -- only loaded when `provideAnimationsAsync()` is called. Covered in [Chapter 27](ch27-material-design-system.md) and expanded in [Chapter 37](ch37-animations-deep-dive.md). |
+| `@angular/animations` | `~21.0.0` | dep | The animation engine: `trigger`, `state`, `transition`, `animate`, `keyframes`, `query`, `stagger`. Optional -- only loaded when `provideAnimationsAsync()` is called. Covered in [Chapter 32](ch22-material-design-system.md) and expanded in [Chapter 39](ch23-animations.md). |
 
 ### Platform Adapters
 
@@ -32,7 +32,7 @@ Different execution environments need different platform packages. Most applicat
 |---|---|---|---|
 | `@angular/platform-browser` | `~21.0.0` | dep | Bootstrap for browser environments (`bootstrapApplication`), `DomSanitizer`, `Title`, `Meta`, and the asynchronous animation loader (`provideAnimationsAsync`). |
 | `@angular/platform-browser-dynamic` | `~21.0.0` | dep | JIT compilation bootstrap (`platformBrowserDynamic().bootstrapModule()`) and the entry point used by `BrowserDynamicTestingModule`. Not required for AOT-only production builds but commonly pulled in by testing setups and legacy NgModule-based apps. |
-| `@angular/platform-server` | `~21.0.0` | dep | Bootstrap for Node.js server-side rendering. Used together with `@angular/ssr`. See [Chapter 17](ch17-defer-ssr-hydration.md). |
+| `@angular/platform-server` | `~21.0.0` | dep | Bootstrap for Node.js server-side rendering. Used together with `@angular/ssr`. See [Chapter 22](ch31-defer-ssr-hydration.md). |
 
 ### Rendering and Hybrid
 
@@ -40,8 +40,8 @@ These packages extend the client-only baseline with server rendering and service
 
 | Package | Version | Type | Description |
 |---|---|---|---|
-| `@angular/ssr` | `~21.0.0` | dep | Server-side rendering infrastructure: hydration (`provideClientHydration`), incremental hydration, HTTP transfer cache (`withHttpTransferCache`), and hybrid routing with `ServerRoute`/`RenderMode`. Installed by `ng add @angular/ssr`. See [Chapter 17](ch17-defer-ssr-hydration.md). |
-| `@angular/service-worker` | `~21.0.0` | dep | PWA support: `provideServiceWorker`, `SwUpdate`, `SwPush`, and the `ngsw-config.json` schema. Installed by `ng add @angular/pwa`. See [Chapter 26](ch26-pwa-service-workers.md). |
+| `@angular/ssr` | `~21.0.0` | dep | Server-side rendering infrastructure: hydration (`provideClientHydration`), incremental hydration, HTTP transfer cache (`withHttpTransferCache`), and hybrid routing with `ServerRoute`/`RenderMode`. Installed by `ng add @angular/ssr`. See [Chapter 22](ch31-defer-ssr-hydration.md). |
+| `@angular/service-worker` | `~21.0.0` | dep | PWA support: `provideServiceWorker`, `SwUpdate`, `SwPush`, and the `ngsw-config.json` schema. Installed by `ng add @angular/pwa`. See [Chapter 26](ch33-pwa-service-workers.md). |
 
 ### UI Primitives
 
@@ -49,9 +49,9 @@ Angular ships three complementary UI libraries. The CDK provides unstyled buildi
 
 | Package | Version | Type | Description |
 |---|---|---|---|
-| `@angular/cdk` | `~21.0.0` | dep | Component Dev Kit: unstyled primitives including `Overlay`, `Portal`, `A11y` helpers (`LiveAnnouncer`, `cdkTrapFocus`, `FocusMonitor`), `DragDrop` (covered in [Chapter 36](ch36-drag-and-drop.md)), `ScrollingModule` for virtual scroll, `Table`, and `Layout` utilities (`BreakpointObserver`). |
-| `@angular/material` | `~21.0.0` | dep | Material Design 3 components: `MatToolbar`, `MatTable`, `MatFormField`, `MatButton`, `MatDialog`, `MatSnackBar`, `MatTabs`, `MatDatepicker`, and many more. See [Chapter 27](ch27-material-design-system.md). |
-| `@angular/aria` | `~21.0.0` | dep | **New in v21.** Headless, accessible directives implementing WAI-ARIA patterns: `ngToolbar`, `ngTabList`, `ngCombobox`, `ngAccordion`, `ngMenu`, `ngListbox`, `ngTree`, and more. You provide the HTML and styling; Angular Aria handles keyboard interactions and ARIA attributes. See [Chapter 22](ch22-accessibility-aria.md). |
+| `@angular/cdk` | `~21.0.0` | dep | Component Dev Kit: unstyled primitives including `Overlay`, `Portal`, `A11y` helpers (`LiveAnnouncer`, `cdkTrapFocus`, `FocusMonitor`), `DragDrop` (covered in [Chapter 29](ch44-drag-and-drop.md)), `ScrollingModule` for virtual scroll, `Table`, and `Layout` utilities (`BreakpointObserver`). |
+| `@angular/material` | `~21.0.0` | dep | Material Design 3 components: `MatToolbar`, `MatTable`, `MatFormField`, `MatButton`, `MatDialog`, `MatSnackBar`, `MatTabs`, `MatDatepicker`, and many more. See [Chapter 32](ch22-material-design-system.md). |
+| `@angular/aria` | `~21.0.0` | dep | **New in v21.** Headless, accessible directives implementing WAI-ARIA patterns: `ngToolbar`, `ngTabList`, `ngCombobox`, `ngAccordion`, `ngMenu`, `ngListbox`, `ngTree`, and more. You provide the HTML and styling; Angular Aria handles keyboard interactions and ARIA attributes. See [Chapter 8](ch24-accessibility.md). |
 | `@angular/material-moment-adapter` | `~21.0.0` | dep | Date adapter for `MatDatepicker` using Moment.js. |
 | `@angular/material-luxon-adapter` | `~21.0.0` | dep | Date adapter for `MatDatepicker` using Luxon. The recommended modern option. |
 | `@angular/material-date-fns-adapter` | `~21.0.0` | dep | Date adapter for `MatDatepicker` using date-fns. |
@@ -60,7 +60,7 @@ Angular ships three complementary UI libraries. The CDK provides unstyled buildi
 
 | Package | Version | Type | Description |
 |---|---|---|---|
-| `@angular/localize` | `~21.0.0` | dep | The i18n pipeline: `$localize` template literal tagging, XLF message extraction via `ng extract-i18n`, and runtime locale loading. See [Chapter 15](ch15-internationalization.md). |
+| `@angular/localize` | `~21.0.0` | dep | The i18n pipeline: `$localize` template literal tagging, XLF message extraction via `ng extract-i18n`, and runtime locale loading. See [Chapter 23](ch25-internationalization.md). |
 
 ### Testing Utilities
 
@@ -90,10 +90,10 @@ Several important Angular APIs live at **subpaths** of the core packages rather 
 
 | Entry point | Parent package | Description |
 |---|---|---|
-| `@angular/core/rxjs-interop` | `@angular/core` | `toSignal`, `toObservable`, `rxResource`, `outputFromObservable`, `outputToObservable`, `pendingUntilEvent`. The bridge between signals and RxJS -- used throughout [Chapter 3](ch03-reactive-signals.md) and [Chapter 32](ch32-rxjs-deep-dive.md). |
-| `@angular/common/http` | `@angular/common` | `HttpClient`, `provideHttpClient`, `withInterceptors`, `withXsrfConfiguration`, `withHttpTransferCache`, `HttpInterceptorFn`. See [Chapter 12](ch12-initialization-routes.md). |
+| `@angular/core/rxjs-interop` | `@angular/core` | `toSignal`, `toObservable`, `rxResource`, `outputFromObservable`, `outputToObservable`, `pendingUntilEvent`. The bridge between signals and RxJS -- used throughout [Chapter 3](ch03-reactive-signals.md) and [Chapter 10](ch08-rxjs-deep-dive.md). |
+| `@angular/common/http` | `@angular/common` | `HttpClient`, `provideHttpClient`, `withInterceptors`, `withXsrfConfiguration`, `withHttpTransferCache`, `HttpInterceptorFn`. See [Chapter 48](ch13-initialization-routes.md). |
 | `@angular/platform-browser/animations/async` | `@angular/platform-browser` | `provideAnimationsAsync()` -- the lazy animation loader preferred over `provideAnimations()` (see [Chapter 1](ch01-getting-started.md)). |
-| `@angular/router/upgrade` | `@angular/router` | Interop shims for hybrid AngularJS + Angular routing during migration (see [Chapter 51](ch51-migrations.md)). |
+| `@angular/router/upgrade` | `@angular/router` | Interop shims for hybrid AngularJS + Angular routing during migration (see [Chapter 42](ch50-migrations.md)). |
 
 ### Dev Tooling and Build
 
@@ -106,7 +106,7 @@ These are devDependencies that power the CLI and the build. You install them dur
 | `@angular/language-service` | `~21.0.0` | dev | Language server for IDE template support -- autocomplete, hover documentation, and diagnostics inside both inline and external templates. Consumed by the VS Code "Angular Language Service" extension and other TypeScript-aware editors. |
 | `@angular-devkit/build-angular` | `~21.0.0` | dev | The legacy webpack-based builder, still shipped for compatibility with older configurations. New projects use `@angular/build` instead. |
 | `@angular-devkit/architect` | `~21.0.0` | dev | The target/builder orchestration layer beneath `ng build`/`ng serve`. Invoked indirectly in day-to-day use; authoring custom builders requires importing from it. |
-| `@angular-devkit/schematics` | `~21.0.0` | dev | The schematic authoring framework used by `ng generate` and `ng add`. Needed when writing custom generators. See [Chapter 30](ch30-advanced-nx.md). |
+| `@angular-devkit/schematics` | `~21.0.0` | dev | The schematic authoring framework used by `ng generate` and `ng add`. Needed when writing custom generators. See [Chapter 37](ch15-advanced-nx.md). |
 | `@angular-devkit/core` | `~21.0.0` | dev | Core utilities shared by the devkit: JSON schema, logger, file tree abstractions. Transitive dependency of the schematics API. |
 
 ### Integration Helpers
@@ -115,8 +115,8 @@ Optional packages for specific interop scenarios.
 
 | Package | Version | Type | Description |
 |---|---|---|---|
-| `@angular/elements` | `~21.0.0` | dep | Wraps Angular components as framework-agnostic Custom Elements (Web Components). Use when embedding Angular UI in a React/Vue/legacy page. See [Chapter 39](ch39-angular-elements.md). |
-| `@angular/upgrade` | `~21.0.0` | dep | Interop with AngularJS (1.x) during incremental migration. See [Chapter 51](ch51-migrations.md). |
+| `@angular/elements` | `~21.0.0` | dep | Wraps Angular components as framework-agnostic Custom Elements (Web Components). Use when embedding Angular UI in a React/Vue/legacy page. See [Chapter 36](ch40-angular-elements.md). |
+| `@angular/upgrade` | `~21.0.0` | dep | Interop with AngularJS (1.x) during incremental migration. See [Chapter 42](ch50-migrations.md). |
 | `@angular/fire` | `~19.0.0` | dep | Official Firebase bindings: Firestore, Auth, Storage, Cloud Functions. Released on an independent cadence from core Angular -- check the compatibility matrix in the AngularFire README before upgrading. |
 | `@angular/google-maps` | `~21.0.0` | dep | Google Maps component wrappers: `google-map`, `map-marker`, `map-polyline`. |
 | `@angular/youtube-player` | `~21.0.0` | dep | YouTube iframe API component wrapper. |
@@ -129,11 +129,11 @@ Packages outside the `@angular` scope that the book and the companion FinancialA
 
 ### NgRx
 
-State management and reactive utilities maintained by a core team aligned with Angular. Used heavily in [Chapter 9](ch09-ngrx-signal-store.md).
+State management and reactive utilities maintained by a core team aligned with Angular. Used heavily in [Chapter 12](ch10-ngrx-signal-store.md).
 
 | Package | Version | Type | Description |
 |---|---|---|---|
-| `@ngrx/signals` | `~21.0.0` | dep | Signal-native state management: `signalStore`, `withState`, `withComputed`, `withMethods`, `withHooks`. The recommended modern approach. See [Chapter 9](ch09-ngrx-signal-store.md). |
+| `@ngrx/signals` | `~21.0.0` | dep | Signal-native state management: `signalStore`, `withState`, `withComputed`, `withMethods`, `withHooks`. The recommended modern approach. See [Chapter 12](ch10-ngrx-signal-store.md). |
 | `@ngrx/store` | `~21.0.0` | dep | Classic Redux-style global store: `StoreModule`, reducers, selectors. Still maintained for teams with existing investment in this pattern. |
 | `@ngrx/effects` | `~21.0.0` | dep | Side-effect orchestration for `@ngrx/store`: `createEffect`, action streams, observable workflows. |
 | `@ngrx/entity` | `~21.0.0` | dep | Normalized entity collection helpers. Composes with both `signalStore` (`withEntities`) and `@ngrx/store`. |
@@ -148,21 +148,21 @@ NgRx follows Angular's major-version cadence -- NgRx v21 targets `@angular/core@
 
 ### Nx
 
-The monorepo platform the FinancialApp is built on. See [Chapter 14](ch14-monorepos-libraries.md) for fundamentals and [Chapter 30](ch30-advanced-nx.md) for advanced features.
+The monorepo platform the FinancialApp is built on. See [Chapter 14](ch14-monorepos-libraries.md) for fundamentals and [Chapter 37](ch15-advanced-nx.md) for advanced features.
 
 | Package | Version | Type | Description |
 |---|---|---|---|
 | `nx` | `~21.0.0` | dev | The core Nx CLI and task runner. Provides `nx affected`, task caching, the project graph, and `nx migrate`. |
 | `@nx/angular` | `~21.0.0` | dev | Angular-specific generators, executors, and migrations for Nx workspaces. Wraps `@angular-devkit/build-angular` and `@angular/build`. |
 | `@nx/workspace` | `~21.0.0` | dev | Core workspace utilities: `nx init`, project creation, and cross-tech generators. |
-| `@nx/devkit` | `~21.0.0` | dev | API for authoring custom Nx generators and executors. Required when writing the workspace generators from [Chapter 30](ch30-advanced-nx.md). |
+| `@nx/devkit` | `~21.0.0` | dev | API for authoring custom Nx generators and executors. Required when writing the workspace generators from [Chapter 37](ch15-advanced-nx.md). |
 | `@nx/js` | `~21.0.0` | dev | Generic TypeScript library generator; used for libraries that are not Angular-specific. |
 | `@nx/eslint` | `~21.0.0` | dev | ESLint integration for Nx projects: `@nx/eslint:lint` executor and module-boundary rules. |
 | `@nx/vite` | `~21.0.0` | dev | Vite and Vitest integration. Provides the `@nx/vite:test` executor used throughout the FinancialApp. |
 | `@nx/jest` | `~21.0.0` | dev | Jest integration. Alternative to `@nx/vite:test` for teams on Jest. |
-| `@nx/playwright` | `~21.0.0` | dev | Playwright integration for E2E testing. See [Chapter 25](ch25-e2e-playwright.md). |
+| `@nx/playwright` | `~21.0.0` | dev | Playwright integration for E2E testing. See [Chapter 19](ch37-e2e-playwright.md). |
 | `@nx/cypress` | `~21.0.0` | dev | Cypress E2E integration; an alternative to Playwright for teams standardized on Cypress. |
-| `@nx/storybook` | `~21.0.0` | dev | Storybook integration: generators, executors, and build targets. See [Chapter 28](ch28-storybook.md). |
+| `@nx/storybook` | `~21.0.0` | dev | Storybook integration: generators, executors, and build targets. See [Chapter 28](ch26-storybook.md). |
 
 ### Linting
 
@@ -180,7 +180,7 @@ Official angular-eslint rules and the Angular schematic adapter.
 
 | Package | Version | Type | Description |
 |---|---|---|---|
-| `@softarc/sheriff-core` | `~0.16.0` | dev | Dependency rule enforcement between modules. Declarative configuration (`sheriff.config.ts`) catches forbidden imports at lint time. Used throughout the FinancialApp to keep shared libraries from importing app code. See [Chapter 8](ch08-architecture.md). |
+| `@softarc/sheriff-core` | `~0.16.0` | dev | Dependency rule enforcement between modules. Declarative configuration (`sheriff.config.ts`) catches forbidden imports at lint time. Used throughout the FinancialApp to keep shared libraries from importing app code. See [Chapter 11](ch09-architecture.md). |
 
 ### Schematics-Only Packages
 
@@ -188,14 +188,14 @@ These packages are used via `ng add` to scaffold configuration and wiring -- the
 
 | Package | Description |
 |---|---|
-| `@angular/pwa` | Scaffolds `@angular/service-worker`, `manifest.webmanifest`, `ngsw-config.json`, and icons. Runs once via `ng add @angular/pwa`. See [Chapter 26](ch26-pwa-service-workers.md). |
+| `@angular/pwa` | Scaffolds `@angular/service-worker`, `manifest.webmanifest`, `ngsw-config.json`, and icons. Runs once via `ng add @angular/pwa`. See [Chapter 26](ch33-pwa-service-workers.md). |
 | `@angular/ssr` (schematic) | The `ng add @angular/ssr` schematic wires SSR into an existing app. After it runs, the runtime `@angular/ssr` dep listed above remains. |
 
 ---
 
 ## Nx: Monorepo vs Microfrontend
 
-Nx supports two architectural patterns for scaling frontend code: a **monorepo** where multiple apps and libraries share a single codebase and build pipeline, and a **microfrontend** setup where independently deployed applications are composed at runtime. Both have their place. This section is a decision framework and configuration reference -- it does not re-teach Nx fundamentals (see [Chapter 14](ch14-monorepos-libraries.md)) or Native Federation mechanics (see [Chapter 18](ch18-micro-frontends.md)).
+Nx supports two architectural patterns for scaling frontend code: a **monorepo** where multiple apps and libraries share a single codebase and build pipeline, and a **microfrontend** setup where independently deployed applications are composed at runtime. Both have their place. This section is a decision framework and configuration reference -- it does not re-teach Nx fundamentals (see [Chapter 14](ch14-monorepos-libraries.md)) or Native Federation mechanics (see [Chapter 30](ch38-micro-frontends.md)).
 
 ### Decision Framework
 
@@ -391,7 +391,7 @@ export const appRoutes: Routes = [
 }
 ```
 
-Each remote deploys independently to its own host. The shell reads `federation.manifest.json` at startup and lazily loads remotes on route match. Dependency sharing (`shareAll`, `singleton`, `strictVersion`) prevents the user from downloading Angular three times. See [Chapter 18](ch18-micro-frontends.md) for routing across MFEs, authentication coordination, and shared state strategies.
+Each remote deploys independently to its own host. The shell reads `federation.manifest.json` at startup and lazily loads remotes on route match. Dependency sharing (`shareAll`, `singleton`, `strictVersion`) prevents the user from downloading Angular three times. See [Chapter 30](ch38-micro-frontends.md) for routing across MFEs, authentication coordination, and shared state strategies.
 
 ### Side-by-Side Comparison
 
@@ -414,4 +414,4 @@ The monorepo wins on developer productivity and type safety. The microfrontend s
 
 ## Reading Path
 
-If you are new to Angular, start at [Chapter 1](ch01-getting-started.md) and read Part I through Part III in order. Architects should also read [Chapter 8](ch08-architecture.md) and [Chapter 14](ch14-monorepos-libraries.md). Teams evaluating micro frontends should read [Chapter 18](ch18-micro-frontends.md) before adopting the pattern. This chapter stays on your reference shelf -- come back whenever you need to remember which package owns which concern.
+If you are new to Angular, start at [Chapter 1](ch01-getting-started.md) and read Part I through Part III in order. Architects should also read [Chapter 11](ch09-architecture.md) and [Chapter 14](ch14-monorepos-libraries.md). Teams evaluating micro frontends should read [Chapter 30](ch38-micro-frontends.md) before adopting the pattern. This chapter stays on your reference shelf -- come back whenever you need to remember which package owns which concern.

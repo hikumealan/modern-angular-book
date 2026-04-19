@@ -4,7 +4,7 @@ Every framework has a first impression -- the handful of minutes between install
 
 This chapter covers the practical setup: installing the tools, generating the FinancialApp project that we will build on throughout the book, and understanding the files the CLI creates. By the end, you will have a running application, a configured linter, and a production build -- the foundation for everything that follows.
 
-> **Prerequisites:** This book assumes working knowledge of TypeScript -- types, interfaces, classes, generics, arrow functions, and the common utility types. If you are coming from vanilla JavaScript or want a refresher on the subset Angular v21 relies on, see [Appendix A: TypeScript Essentials for Angular](appendix-a-typescript-primer.md) before continuing. For advanced TypeScript patterns (branded types, mapped types, OpenAPI code generation), see [Chapter 31](ch31-advanced-typescript-openapi.md).
+> **Prerequisites:** This book assumes working knowledge of TypeScript -- types, interfaces, classes, generics, arrow functions, and the common utility types. If you are coming from vanilla JavaScript or want a refresher on the subset Angular v21 relies on, see [Appendix A: TypeScript Essentials for Angular](ch51-ch51-ch51-appendix-a-typescript-primer.md) before continuing. For advanced TypeScript patterns (branded types, mapped types, OpenAPI code generation), see [Chapter 24](ch27-advanced-typescript-openapi.md).
 
 ## Tooling
 
@@ -79,7 +79,7 @@ ng new financial-app --style=scss --ssr=false
 The CLI prompts you to confirm a few options. Here is what it creates:
 
 - `--style=scss` selects SCSS for stylesheets. You can also use `css`, `less`, or `sass`.
-- `--ssr=false` disables server-side rendering. We will cover SSR and hydration in [Chapter 17](ch17-defer-ssr-hydration.md).
+- `--ssr=false` disables server-side rendering. We will cover SSR and hydration in [Chapter 22](ch31-defer-ssr-hydration.md).
 
 As of Angular v21, the generated project is **standalone by default** (no `NgModule` anywhere), **zoneless by default** (no `zone.js` polyfill), and uses **Vitest** as its test runner. These were opt-in features in earlier versions. Now they are the starting point.
 
@@ -364,7 +364,7 @@ ng build --stats-json
 npx webpack-bundle-analyzer dist/financial-app/stats.json
 ```
 
-Keeping an eye on bundle sizes from the start prevents surprises when the application grows. We will revisit build optimization techniques in [Chapter 17](ch17-defer-ssr-hydration.md) when we cover `@defer` blocks and lazy loading.
+Keeping an eye on bundle sizes from the start prevents surprises when the application grows. We will revisit build optimization techniques in [Chapter 22](ch31-defer-ssr-hydration.md) when we cover `@defer` blocks and lazy loading.
 
 ## Deploying an Angular App
 
@@ -462,8 +462,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 This section deliberately stops at static hosting. Two chapters cover the next steps:
 
-- [Chapter 17](ch17-defer-ssr-hydration.md) -- server-side rendering, hydration, and prerendering. If your app needs SEO, social previews, or fast first-paint on slow networks, start there.
-- [Chapter 26](ch26-pwa-service-workers.md) -- PWA deployment, service-worker cache invalidation, and push notifications. Service workers add another layer of caching that must be coordinated with the `index.html` cache-control headers above.
+- [Chapter 22](ch31-defer-ssr-hydration.md) -- server-side rendering, hydration, and prerendering. If your app needs SEO, social previews, or fast first-paint on slow networks, start there.
+- [Chapter 26](ch33-pwa-service-workers.md) -- PWA deployment, service-worker cache invalidation, and push notifications. Service workers add another layer of caching that must be coordinated with the `index.html` cache-control headers above.
 
 ## Summary
 

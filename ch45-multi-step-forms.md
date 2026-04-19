@@ -30,7 +30,7 @@ The wizard library has three pieces:
 
 - **`FinWizard`** -- the orchestrator. Manages the active step index, tracks which steps are complete, gates navigation on per-step validity, and emits `complete` with the aggregated value at the end. Renders the progress indicator and Next/Back buttons; step content comes from projected children.
 - **`FinWizardStep`** -- a thin wrapper around a Signal Forms subtree, typically one `formGroup` per step. Owns its own fields, validators, and template. Exposes its form group through a signal-valued input so the parent can ask "are you valid?" without reaching into private state.
-- **Progress indicator** -- a linear bar for 2-4 steps, a step list with check marks for 5+. Built on design-system tokens ([Chapter 27](ch27-material-design-system.md)) so it inherits the current theme automatically.
+- **Progress indicator** -- a linear bar for 2-4 steps, a step list with check marks for 5+. Built on design-system tokens ([Chapter 32](ch22-material-design-system.md)) so it inherits the current theme automatically.
 
 ---
 
@@ -138,7 +138,7 @@ export class FinWizardComponent {
 }
 ```
 
-`contentChildren()` from [Chapter 10](ch10-signal-queries.md) collects the projected `FinWizardStep` instances as a signal, so adding or removing steps at runtime just works. Because `canAdvance` is a `computed()`, the Next button's disabled state updates automatically when the active step's validity changes -- no manual wiring.
+`contentChildren()` from [Chapter 13](ch11-signal-queries.md) collects the projected `FinWizardStep` instances as a signal, so adding or removing steps at runtime just works. Because `canAdvance` is a `computed()`, the Next button's disabled state updates automatically when the active step's validity changes -- no manual wiring.
 
 ---
 
@@ -186,7 +186,7 @@ Clicking a completed step in the progress indicator jumps the user directly back
 
 ### Unsaved-Changes Guard
 
-Wizards accumulate real work. Losing a half-completed onboarding to an accidental browser-back click is unacceptable. The wizard integrates with [Chapter 12](ch12-initialization-routes.md)'s `CanDeactivateFn`:
+Wizards accumulate real work. Losing a half-completed onboarding to an accidental browser-back click is unacceptable. The wizard integrates with [Chapter 48](ch13-initialization-routes.md)'s `CanDeactivateFn`:
 
 ```typescript
 // apps/financial-app/src/app/features/clients/client-onboarding.component.ts
@@ -200,7 +200,7 @@ export class ClientOnboardingComponent implements HasUnsavedChanges {
 }
 ```
 
-A production variant replaces `window.confirm` with the `FinConfirmDialog` from [Chapter 27](ch27-material-design-system.md).
+A production variant replaces `window.confirm` with the `FinConfirmDialog` from [Chapter 32](ch22-material-design-system.md).
 
 ---
 
@@ -236,7 +236,7 @@ Long wizards are abandoned without autosave. FinancialApp writes the in-progress
 
 ### Debounced Save Service
 
-Building on the offline sync utilities from [Chapter 44](ch44-optimistic-ui.md) and the error-handling patterns in [Chapter 23](ch23-error-handling.md):
+Building on the offline sync utilities from [Chapter 47](ch34-optimistic-ui.md) and the error-handling patterns in [Chapter 40](ch19-error-handling.md):
 
 ```typescript
 // libs/shared/ui/wizard/wizard-draft.service.ts
@@ -334,7 +334,7 @@ Wizards are more accessibility-sensitive than single-page forms because a step c
 
 ### Progress Bar Semantics
 
-Following the pattern from [Chapter 22](ch22-accessibility-aria.md), the indicator exposes `role="progressbar"` with live ARIA values:
+Following the pattern from [Chapter 8](ch24-accessibility.md), the indicator exposes `role="progressbar"` with live ARIA values:
 
 ```html
 <div class="fin-wizard-progress" role="progressbar"
@@ -362,7 +362,7 @@ Following the pattern from [Chapter 22](ch22-accessibility-aria.md), the indicat
 
 ### Announcing Step Changes and Focus Management
 
-The orchestrator uses `LiveAnnouncer` from `@angular/cdk/a11y` ([Chapter 22](ch22-accessibility-aria.md)) to speak the new step label on every navigation. Without this, a keyboard user hears silence when the content swaps and assumes nothing happened.
+The orchestrator uses `LiveAnnouncer` from `@angular/cdk/a11y` ([Chapter 8](ch24-accessibility.md)) to speak the new step label on every navigation. Without this, a keyboard user hears silence when the content swaps and assumes nothing happened.
 
 After advancing, focus moves into the new step. The step exposes `focusFirstField()`, called inside `queueMicrotask()` so the new step has rendered first:
 
@@ -383,7 +383,7 @@ Enter within the form triggers `next()`. Shift+Enter as "go back" is a convenien
 
 ## Design-System Integration
 
-Wizard steps render their fields through `FinFormField` and submit through `FinButton` ([Chapter 27](ch27-material-design-system.md)). The progress indicator uses design tokens directly:
+Wizard steps render their fields through `FinFormField` and submit through `FinButton` ([Chapter 32](ch22-material-design-system.md)). The progress indicator uses design tokens directly:
 
 ```scss
 // libs/shared/ui/wizard/fin-wizard.component.scss
@@ -511,7 +511,7 @@ describe('ClientOnboardingComponent wizard flow', () => {
 });
 ```
 
-Pair these with an `axe-core` assertion from [Chapter 22](ch22-accessibility-aria.md) on each step's rendered markup, and a Playwright end-to-end test ([Chapter 25](ch25-e2e-playwright.md)) that walks the full six-step flow in a real browser. Unit tests catch the logic; e2e tests catch the glue.
+Pair these with an `axe-core` assertion from [Chapter 8](ch24-accessibility.md) on each step's rendered markup, and a Playwright end-to-end test ([Chapter 19](ch37-e2e-playwright.md)) that walks the full six-step flow in a real browser. Unit tests catch the logic; e2e tests catch the glue.
 
 ---
 
@@ -519,7 +519,7 @@ Pair these with an `axe-core` assertion from [Chapter 22](ch22-accessibility-ari
 
 Wizards exist because attention is finite. Splitting a long form into steps reduces cognitive load, makes validation failures local and actionable, and turns an abandonable wall of inputs into a progressable journey. The cost is architectural complexity: navigation state, progress UI, autosave, focus management, and submission strategy all become explicit concerns.
 
-The `FinWizard` pattern composes cleanly with the Signal Forms foundation from [Chapter 6](ch06-signal-forms.md): each step is a `formGroup`, step validity is a `.valid()` signal, and the wizard's `canAdvance` is a `computed()` over the current step. Cross-step rules use the same reactive primitives; draft autosave hooks into `effect()` and IndexedDB. Design-system wrappers from [Chapter 27](ch27-material-design-system.md) keep visuals consistent, `LiveAnnouncer` from [Chapter 22](ch22-accessibility-aria.md) keeps assistive tech informed, and the `CanDeactivate` guard from [Chapter 12](ch12-initialization-routes.md) keeps half-finished work safe.
+The `FinWizard` pattern composes cleanly with the Signal Forms foundation from [Chapter 6](ch06-signal-forms.md): each step is a `formGroup`, step validity is a `.valid()` signal, and the wizard's `canAdvance` is a `computed()` over the current step. Cross-step rules use the same reactive primitives; draft autosave hooks into `effect()` and IndexedDB. Design-system wrappers from [Chapter 32](ch22-material-design-system.md) keep visuals consistent, `LiveAnnouncer` from [Chapter 8](ch24-accessibility.md) keeps assistive tech informed, and the `CanDeactivate` guard from [Chapter 48](ch13-initialization-routes.md) keeps half-finished work safe.
 
 Reserve wizards for forms that genuinely benefit from staging -- complexity, dependency, abandonment risk, or multi-session workflows. For shorter forms, the overhead is not worth the clicks. When you do reach for one, the patterns here cover the hard parts so each feature team only writes the step components that describe their domain.
 

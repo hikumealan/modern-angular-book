@@ -637,7 +637,7 @@ export const retryInterceptor: HttpInterceptorFn = (req, next) => {
 };
 ```
 
-[Chapter 23](ch23-error-handling.md) builds a full retry-with-backoff interceptor on this pattern.
+[Chapter 40](ch19-error-handling.md) builds a full retry-with-backoff interceptor on this pattern.
 
 #### Binary Responses
 
@@ -712,13 +712,13 @@ The component gets a read-only signal it can bind directly:
 <article>{{ answer() }}</article>
 ```
 
-The `AbortController` + `DestroyRef.onDestroy` pattern scopes the connection to the component's lifetime. [Chapter 13](ch13-agentic-ui-hashbrown.md) builds on this for the Hashbrown assistant UI.
+The `AbortController` + `DestroyRef.onDestroy` pattern scopes the connection to the component's lifetime. [Chapter 49](ch47-ai-in-angular.md) builds on this for the Hashbrown assistant UI.
 
 #### Related Chapters
 
-- [Chapter 21](ch21-security-owasp.md) covers XSRF cookie setup and how `HttpClient` integrates with it.
-- [Chapter 23](ch23-error-handling.md) builds retry interceptors, global error handlers, and resource-error UI states.
-- [Chapter 26](ch26-pwa-service-workers.md) shows how to queue failed writes with Background Sync when offline.
+- [Chapter 35](ch18-security-owasp.md) covers XSRF cookie setup and how `HttpClient` integrates with it.
+- [Chapter 40](ch19-error-handling.md) builds retry interceptors, global error handlers, and resource-error UI states.
+- [Chapter 26](ch33-pwa-service-workers.md) shows how to queue failed writes with Background Sync when offline.
 
 ---
 
@@ -948,7 +948,7 @@ Now the component is rendered inside a shadow root attached to its host element.
 - The component's own styles cannot cross out.
 - Events that cross the boundary are retargeted; the DOM tree is split.
 
-Shadow DOM is the right choice for truly self-contained widgets -- embeddable third-party components, browser extensions, or micro-frontends where you need to guarantee that consumers cannot accidentally override your styles (see [Chapter 18](ch18-micro-frontends.md)). It is rarely the right choice for an application's own internal components, because you lose the ability to theme globally. Forms, overlays, and focus management also need extra care: a `<dialog>` rendered inside a shadow root will not absorb clicks outside its boundary the way a normal dialog does, and focus can escape the shadow tree in surprising ways.
+Shadow DOM is the right choice for truly self-contained widgets -- embeddable third-party components, browser extensions, or micro-frontends where you need to guarantee that consumers cannot accidentally override your styles (see [Chapter 30](ch38-micro-frontends.md)). It is rarely the right choice for an application's own internal components, because you lose the ability to theme globally. Forms, overlays, and focus management also need extra care: a `<dialog>` rendered inside a shadow root will not absorb clicks outside its boundary the way a normal dialog does, and focus can escape the shadow tree in surprising ways.
 
 ### `ViewEncapsulation.None`
 
@@ -1022,7 +1022,7 @@ You often have two ways to apply a visual change: toggle a CSS class from the te
 }
 ```
 
-Avoid dynamic *style* bindings where a class will do. `[style.padding]="computePadding()"` runs the expression on every change detection cycle and produces an inline style that is harder to override and less cacheable. Use `[style.property]` bindings only when the value is genuinely dynamic -- positions driven by drag state, computed sizes, colors derived from data. See [Chapter 20](ch20-style-guide-structure.md) for the official style guide's recommendations on class and style bindings.
+Avoid dynamic *style* bindings where a class will do. `[style.padding]="computePadding()"` runs the expression on every change detection cycle and produces an inline style that is harder to override and less cacheable. Use `[style.property]` bindings only when the value is genuinely dynamic -- positions driven by drag state, computed sizes, colors derived from data. See [Chapter 31](ch16-style-guide-governance.md) for the official style guide's recommendations on class and style bindings.
 
 ### `::ng-deep` Is Deprecated -- Use Tokens Instead
 
@@ -1051,7 +1051,7 @@ You will occasionally see older code use `::ng-deep` to pierce encapsulation and
 }
 ```
 
-CSS custom properties cross encapsulation boundaries automatically -- both emulated and shadow-DOM. The child defines sensible defaults with the second argument to `var()`. The parent (or a design-system wrapper) overrides them. [Chapter 27](ch27-material-design-system.md) builds the FinancialApp design system on this exact pattern: a foundation of `--fin-*` tokens consumed by every component, with light/dark themes switching whole sets of values from a single parent rule.
+CSS custom properties cross encapsulation boundaries automatically -- both emulated and shadow-DOM. The child defines sensible defaults with the second argument to `var()`. The parent (or a design-system wrapper) overrides them. [Chapter 32](ch22-material-design-system.md) builds the FinancialApp design system on this exact pattern: a foundation of `--fin-*` tokens consumed by every component, with light/dark themes switching whole sets of values from a single parent rule.
 
 ### Choosing a Mode
 

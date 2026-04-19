@@ -1,1 +1,5 @@
 .DS_Store
+
+# Local pre-reorganization backup snapshots
+v1/
+v1.zip

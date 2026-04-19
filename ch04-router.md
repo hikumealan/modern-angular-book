@@ -540,4 +540,4 @@ The Angular router transforms a collection of standalone components into a navig
 - **Query strings and fragments** for optional state like filters and in-page anchors.
 - **Path vs. hash routing** -- prefer `PathLocationStrategy` unless server-side rewrite rules are impossible.
 
-What the router does *not* handle is controlling *access* to routes. Guards like `CanActivateFn` and resolvers like `ResolveFn` are covered in [Chapter 12](ch12-initialization-routes.md), where we use them to protect routes behind authentication checks and pre-fetch data before a component renders.
+What the router does *not* handle is controlling *access* to routes. Guards like `CanActivateFn` and resolvers like `ResolveFn` are covered in [Chapter 48](ch13-initialization-routes.md), where we use them to protect routes behind authentication checks and pre-fetch data before a component renders.

@@ -486,7 +486,7 @@ These are the operators that carry the weight in typical Angular applications:
 - **`mergeMap(fn)`** -- like `switchMap` but does not cancel -- runs all inner observables in parallel. Use when every outer emission *must* produce a result (uploads, fire-and-forget logging).
 - **`concatMap(fn)`** -- like `mergeMap` but serializes -- one inner observable at a time. Use when order matters.
 - **`catchError(fn)`** -- intercept an error and return a fallback observable. Without `catchError`, an error terminates the stream permanently.
-- **`retry({ count, delay })`** -- resubscribe on error. See [Chapter 23](ch23-error-handling.md) for the full retry-with-backoff pattern.
+- **`retry({ count, delay })`** -- resubscribe on error. See [Chapter 40](ch19-error-handling.md) for the full retry-with-backoff pattern.
 - **`shareReplay({ bufferSize, refCount })`** -- multicast a cold observable and replay the last `bufferSize` values to late subscribers. The standard way to cache an HTTP request shared by multiple components.
 - **`takeUntilDestroyed()`** -- Angular-specific. Completes the observable when the current injection context is destroyed. It is the modern replacement for the `Subject<void>`-plus-`takeUntil` cleanup pattern.
 
@@ -568,7 +568,7 @@ export class TransactionStore {
 const transactions = toSignal(this.store.transactions$, { initialValue: [] });
 ```
 
-If the pattern looks familiar, it should -- it is Redux/Flux expressed in RxJS idioms. Most new code in this book uses NgRx Signal Store ([Chapter 9](ch09-ngrx-signal-store.md)) instead, but the operation-stream pattern is worth recognizing because it appears throughout existing Angular codebases.
+If the pattern looks familiar, it should -- it is Redux/Flux expressed in RxJS idioms. Most new code in this book uses NgRx Signal Store ([Chapter 12](ch10-ngrx-signal-store.md)) instead, but the operation-stream pattern is worth recognizing because it appears throughout existing Angular codebases.
 
 ### Bridging Signals and Observables
 
@@ -641,8 +641,8 @@ The boundary is usually one of:
 ### Cross-References
 
 - [Chapter 7](ch07-testing-vitest.md), "Testing Timers and Debouncing" -- Vitest fake timers for observables that use `debounceTime` or `delay`.
-- [Chapter 9](ch09-ngrx-signal-store.md) -- `rxMethod` and `rxMutation` in NgRx Signal Store, built on `toObservable` + operator chains.
-- [Chapter 23](ch23-error-handling.md) -- `catchError` and retry strategies for HTTP interceptors.
+- [Chapter 12](ch10-ngrx-signal-store.md) -- `rxMethod` and `rxMutation` in NgRx Signal Store, built on `toObservable` + operator chains.
+- [Chapter 40](ch19-error-handling.md) -- `catchError` and retry strategies for HTTP interceptors.
 - [Chapter 2](ch02-signal-components.md), "Advanced HTTP" -- File uploads, cancellation, and streaming with `HttpClient` and `fetch`.
 
 ---
